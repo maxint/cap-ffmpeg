@@ -292,7 +292,7 @@ bool VideoCapture_FFMPEG::grabFrame()
     return valid;
 }
 
-bool VideoCapture_FFMPEG::retrieveFrame(uint8_t** data[4], int* step[4], int* width, int* height)
+bool VideoCapture_FFMPEG::retrieveFrame(uint8_t** data[4], int* step[4])
 {
     ENTER_FUNCTION;
 
@@ -337,8 +337,6 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t** data[4], int* step[4], int* wi
 
     memcpy(*data, dst_frame ? dst_frame->data : src_frame->data, 4*sizeof(uint8_t *));
     memcpy(*step, dst_frame ? dst_frame->linesize : src_frame->linesize, 4*sizeof(int *));
-    *width = dst_width;
-    *height = dst_height;
 
     EXIT_FUNCTION;
 
@@ -785,7 +783,7 @@ void VideoWriter_FFMPEG::close()
 
 /// Create a video writer object that uses FFMPEG
 bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
-                              int pix_fmt, int width, int height)
+                              int width, int height, int pix_fmt)
 {
     int err;
     double bitrate_scale = 1;

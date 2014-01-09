@@ -41,7 +41,7 @@ install:
 	$(MKDIR) $(PREFIX){,/inc,/lib,/bin}
 	$(CP) $(HEADERS) $(PREFIX)/inc/
 	$(CP) $(LIBOUT) $(PREFIX)/lib/
-	$(CP) $(DLLOUT) $(PREFIX)/bin/
+	$(CP) $(DLLOUT) $(DEFOUT) $(PREFIX)/bin/
 
 #### Detail Build
 

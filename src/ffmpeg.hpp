@@ -19,7 +19,7 @@ struct VideoCapture_FFMPEG
     void    close();
 
     bool    grabFrame();
-    bool    retrieveFrame(uint8_t** data[4], int* step[4], int* width, int* height);
+    bool    retrieveFrame(uint8_t** data[4], int* step[4]);
 
     double  getProperty(int);
     bool    setProperty(int, double);
@@ -70,7 +70,7 @@ struct VideoWriter_FFMPEG
     VideoWriter_FFMPEG()  { init(); }
     ~VideoWriter_FFMPEG() { close(); }
 
-    bool open(const char* filename, int fourcc, double fps, int pix_fmt, int width, int height);
+    bool open(const char* filename, int fourcc, double fps, int width, int height, int pix_fmt);
     void close();
     bool writeFrame(const uint8_t* data);
 

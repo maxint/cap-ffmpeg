@@ -35,19 +35,18 @@ int ff_cap_grab(VideoCapture_FFMPEG* cap)
     return cap->grabFrame();
 }
 
-int ff_cap_retrieve(VideoCapture_FFMPEG* cap, unsigned char** data[4], int* step[4],
-                           int* width, int* height)
+int ff_cap_retrieve(VideoCapture_FFMPEG* cap, unsigned char** data[4], int* step[4])
 {
-    return cap->retrieveFrame(data, step, width, height);
+    return cap->retrieveFrame(data, step);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps,
-                                               int width, int height, int isColor)
+                                     int width, int height, int pix_fmt)
 {
     VideoWriter_FFMPEG *writer = new VideoWriter_FFMPEG();
-    if (writer->open(fname, fourcc, fps, width, height, isColor))
+    if (writer->open(fname, fourcc, fps, width, height, pix_fmt))
         return writer;
     delete writer;
     return NULL;
