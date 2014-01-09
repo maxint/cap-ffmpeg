@@ -37,8 +37,8 @@ enum {
 // Video Capture
 FFMPEG_CAP_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
 FFMPEG_CAP_DLL void   ff_cap_release(VideoCapture_FFMPEG** cap);
-FFMPEG_CAP_DLL int    ff_cap_get(VideoCapture_FFMPEG* cap, int propid, double val);
-FFMPEG_CAP_DLL double ff_cap_set(VideoCapture_FFMPEG* cap, int propid);
+FFMPEG_CAP_DLL double ff_cap_get(VideoCapture_FFMPEG* cap, int propid);
+FFMPEG_CAP_DLL int    ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val);
 FFMPEG_CAP_DLL int    ff_cap_grab(VideoCapture_FFMPEG* cap);
 FFMPEG_CAP_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap,
                                       unsigned char** data[4], int* step[4]);

@@ -20,12 +20,12 @@ void ff_cap_release(VideoCapture_FFMPEG** cap)
     }
 }
 
-int ff_cap_get(VideoCapture_FFMPEG* cap, int propid, double val)
+int ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val)
 {
     return cap->setProperty(propid, val);
 }
 
-double ff_cap_set(VideoCapture_FFMPEG* cap, int propid)
+double ff_cap_get(VideoCapture_FFMPEG* cap, int propid)
 {
     return cap->getProperty(propid);
 }
