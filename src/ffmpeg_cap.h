@@ -5,10 +5,10 @@
 extern "C" {
 #endif
 
-#ifdef CV_FFMPEG_EXPORTS
-#   define CV_FFMPEG_DLL __declspec(dllexport)
+#ifdef FFMPEG_CAP_EXPORTS
+#   define FFMPEG_CAP_DLL __declspec(dllexport)
 #else
-#   define CV_FFMPEG_DLL __declspec(dllimport)
+#   define FFMPEG_CAP_DLL __declspec(dllimport)
 #endif
 
 struct VideoCapture_FFMPEG;
@@ -35,20 +35,20 @@ enum {
 };
 
 // Video Capture
-CV_FFMPEG_DLL VideoCapture_FFMPEG* cvCreateVideoCapture_FFMPEG(const char* fname);
-CV_FFMPEG_DLL void cvReleaseVideoCapture_FFMPEG(VideoCapture_FFMPEG** cap);
-CV_FFMPEG_DLL int cvSetCaptureProperty_FFMPEG(VideoCapture_FFMPEG* cap, int propid, double val);
-CV_FFMPEG_DLL double cvGetCaptureProperty_FFMPEG(VideoCapture_FFMPEG* cap, int propid);
-CV_FFMPEG_DLL int cvGrabFrame_FFMPEG(VideoCapture_FFMPEG* cap);
-CV_FFMPEG_DLL int cvRetrieveFrame_FFMPEG(VideoCapture_FFMPEG* cap,
-                                         unsigned char** data[4], int* step[4],
-                                         int* width, int* height);
+FFMPEG_CAP_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
+FFMPEG_CAP_DLL void ff_cap_release(VideoCapture_FFMPEG** cap);
+FFMPEG_CAP_DLL int ff_cap_get(VideoCapture_FFMPEG* cap, int propid, double val);
+FFMPEG_CAP_DLL double ff_cap_set(VideoCapture_FFMPEG* cap, int propid);
+FFMPEG_CAP_DLL int ff_cap_grab(VideoCapture_FFMPEG* cap);
+FFMPEG_CAP_DLL int ff_cap_retrieve(VideoCapture_FFMPEG* cap,
+                                   unsigned char** data[4], int* step[4],
+                                   int* width, int* height);
 
 // Video Writer
-CV_FFMPEG_DLL VideoWriter_FFMPEG* cvCreateVideoWriter_FFMPEG(
+FFMPEG_CAP_DLL VideoWriter_FFMPEG* ff_writer_create(
     const char* fname, int fourcc, double fps, int width, int height, int isColor);
-CV_FFMPEG_DLL void cvReleaseVideoWriter_FFMPEG(VideoWriter_FFMPEG** writer);
-CV_FFMPEG_DLL int cvWriteFrame_FFMPEG(VideoWriter_FFMPEG* writer, const unsigned char* data);
+FFMPEG_CAP_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
+FFMPEG_CAP_DLL int ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
 
 #ifdef __cplusplus
 }
