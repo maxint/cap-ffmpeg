@@ -26,8 +26,15 @@ PREBUILT=$NDK/toolchains/arm-linux-androideabi-4.7/prebuilt/linux-x86
 
 function build_one
 {
+TARGET_OS=android
+BUILD_DIR=$TARGET_OS-build
+rm $BUILD_DIR -rf
+mkdir $BUILD_DIR -p
+cd $BUILD_DIR
+
 cd ffmpeg-2.1.1
-./configure --target-os=linux \
+../ffmpeg-source/configure \
+    --target-os=linux \
     --prefix=$PREFIX \
     --enable-cross-compile \
     --extra-libs="-lgcc" \
@@ -74,7 +81,7 @@ $PREBUILT/bin/arm-linux-androideabi-ld -rpath-link=$PLATFORM/usr/lib -L$PLATFORM
 cd -
 }
 
-PREFIX=../android/$CPU 
+PREFIX=android/$CPU 
 
 #arm v6
 #CPU=armv6

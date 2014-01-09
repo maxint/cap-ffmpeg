@@ -2,11 +2,14 @@
 
 TARGET_OS=mingw32
 
+# Build ffmpeg static libraries
+
 BUILD_DIR=$TARGET_OS-build
 rm $BUILD_DIR -rf
 mkdir $BUILD_DIR -p
 cd $BUILD_DIR
-../ffmpeg-2.1.1/configure \
+
+../ffmpeg-source/configure \
     --target-os=$TARGET_OS \
     --prefix="install" \
     --fatal-warnings \
@@ -71,4 +74,9 @@ make -j4 install
     #-lc -lm -lz -ldl -llog  --warn-once  --dynamic-linker=/system/bin/linker \
     #$PREBUILT/lib/gcc/arm-linux-androideabi/4.4.3/libgcc.a
 
+cd -
+
+## Build C wrapper
+cd src
+make && make install
 cd -
