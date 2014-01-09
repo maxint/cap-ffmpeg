@@ -56,8 +56,6 @@ private:
     int64_t           frame_number;
     int64_t           first_frame_number;
 
-    mutex             lock;
-
 /*
    'filename' contains the filename of the video source,
    'filename==NULL' indicates that ffmpeg's seek support works for the particular file.

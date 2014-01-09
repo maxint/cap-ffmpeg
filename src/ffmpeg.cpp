@@ -84,8 +84,6 @@ void VideoCapture_FFMPEG::init()
 {
     ENTER_FUNCTION;
 
-    auto_lock autoLock(lock);
-
     format_ctx = NULL;
     video_stream = -1;
     video_st = NULL;
@@ -110,8 +108,6 @@ void VideoCapture_FFMPEG::init()
 void VideoCapture_FFMPEG::destory()
 {
     ENTER_FUNCTION;
-
-    auto_lock autoLock(lock);
 
     if (img_convert_ctx)
     {
@@ -233,8 +229,6 @@ bool VideoCapture_FFMPEG::grabFrame()
 {
     ENTER_FUNCTION;
 
-    auto_lock autoLock(lock);
-
     bool valid = false;
     int got_picture;
 
@@ -302,8 +296,6 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t** data[4], int* step[4], int* wi
 {
     ENTER_FUNCTION;
 
-    auto_lock autoLock(lock);
-
     if (!src_frame)
         return false;
 
@@ -355,8 +347,6 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t** data[4], int* step[4], int* wi
 
 double VideoCapture_FFMPEG::getProperty(int property_id)
 {
-    auto_lock autoLock(lock);
-
     if (!video_st) return 0;
 
     switch(property_id)
@@ -392,8 +382,6 @@ double VideoCapture_FFMPEG::getProperty(int property_id)
 
 bool VideoCapture_FFMPEG::setProperty(int property_id, double value)
 {
-    auto_lock autoLock(lock);
-
     if (!video_st) return false;
 
     switch(property_id)
@@ -436,8 +424,6 @@ bool VideoCapture_FFMPEG::setProperty(int property_id, double value)
 
 void VideoCapture_FFMPEG::seek(int64_t pos)
 {
-    auto_lock autoLock(lock);
-
     pos = min(pos, get_total_frames());
     int delta = 16;
 

@@ -1,7 +1,9 @@
 ffmpeg-*/
 *-build/
 
-
-*.dll
-*.o
 *.exe
+*.dll
+*.lib
+*.o
+*.def
+*.exp
