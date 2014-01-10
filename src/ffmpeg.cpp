@@ -10,10 +10,8 @@
 class InternalFFMpegRegister
 {
 public:
-    InternalFFMpegRegister()
-    {
-        if (!initialized)
-        {
+    InternalFFMpegRegister() {
+        if (!initialized) {
             //avformat_network_init();
 
             /* register all codecs, demux and protocols */
@@ -27,9 +25,7 @@ public:
             initialized = true;
         }
     }
-
-    ~InternalFFMpegRegister()
-    {
+    ~InternalFFMpegRegister() {
         initialized = false;
         //av_lockmgr_register(NULL);
     }
