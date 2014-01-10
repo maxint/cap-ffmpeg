@@ -1,16 +1,19 @@
 // videoinput_demo.cpp : Defines the entry point for the application.
 //
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <ffmpeg_cap.h>
 #include "resource.h"
+#include <tchar.h>
+#include <stdio.h>
 
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];								// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];								// The title bar text
+HINSTANCE hInst;                        // current instance
+TCHAR szTitle[MAX_LOADSTRING];          // The title bar text
+TCHAR szWindowClass[MAX_LOADSTRING];    // The title bar text
 LONG nTimer;
 
 VideoCapture_FFMPEG* cap = NULL;
@@ -20,7 +23,7 @@ unsigned char *data[4] = {0};
 int step[4] = {0};
 BITMAPINFO bmi;
 
-// Foward declarations of functions included in this code module:
+// Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -33,11 +36,18 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 {
  	// TODO: Place code here.
 	MSG msg;
-	HACCEL hAccelTable;
+    HACCEL hAccelTable;
+
+    if (__argc != 2)
+    {
+        MessageBox(NULL, "usage: <EXE> <VIDEO FILE>", "Help", MB_OK | MB_ICONSTOP);
+        return -1;
+    }
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_DSHOW_CAP_DEMO, szWindowClass, MAX_LOADSTRING);
+    _stprintf(szTitle, "%s - %s", szTitle, __argv[1]);
+	LoadString(hInstance, IDS_WINDOW_CLASS, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// Perform application initialization:
@@ -60,8 +70,6 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	return msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -90,7 +98,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hIcon			= LoadIcon(NULL, IDI_APPLICATION);
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= (LPCSTR)IDC_DSHOW_CAP_DEMO;
+	wcex.lpszMenuName	= (LPCSTR)IDS_WINDOW_CLASS;
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= LoadIcon(NULL, IDI_APPLICATION);
 
@@ -144,8 +152,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message) 
 	{
 	case WM_CREATE:
-        cap = ff_cap_create("test.mp4");
+        cap = ff_cap_create(__argv[1]);
         if (!cap) {
+            MessageBox(hWnd, "Can not open given video file", "Error", MB_OK | MB_ICONERROR);
             DestroyWindow(hWnd);
             break;
         }
@@ -189,9 +198,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_ABOUT:
 			DialogBox(hInst, (LPCTSTR)IDD_ABOUTBOX, hWnd, (DLGPROC)About);
 			break;
+
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
+
+        case IDM_RELOAD:
+            ff_cap_set(cap, FFMPEG_CAP_PROP_POS_MSEC, 0);
+            SetWindowPos(hWnd, 0, 0, 0, nWidth, nHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            break;
 
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -207,7 +222,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code here...
             GetClientRect(hWnd, &rt);
-            StretchDIBits(hdc, 0, 0, rt.right, rt.bottom, 
+            //SetStretchBltMode(hdc, MAXSTRETCHBLTMODE);
+            SetStretchBltMode(hdc, COLORONCOLOR);
+            StretchDIBits(hdc, 0, rt.bottom-1, rt.right, -rt.bottom, 
                 0, 0, nWidth, nHeight, data[0], &bmi, DIB_RGB_COLORS, SRCCOPY);
             EndPaint(hWnd, &ps);
         }
