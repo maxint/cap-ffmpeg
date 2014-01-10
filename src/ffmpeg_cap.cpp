@@ -35,7 +35,7 @@ int ff_cap_grab(VideoCapture_FFMPEG* cap)
     return cap->grabFrame();
 }
 
-int ff_cap_retrieve(VideoCapture_FFMPEG* cap, unsigned char** data[4], int* step[4])
+int ff_cap_retrieve(VideoCapture_FFMPEG* cap, unsigned char* data[4], int step[4])
 {
     return cap->retrieveFrame(data, step);
 }

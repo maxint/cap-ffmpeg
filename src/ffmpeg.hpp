@@ -19,7 +19,7 @@ struct VideoCapture_FFMPEG
     void    close();
 
     bool    grabFrame();
-    bool    retrieveFrame(uint8_t** data[4], int* step[4]);
+    bool    retrieveFrame(uint8_t* data[4], int step[4]);
 
     double  getProperty(int);
     bool    setProperty(int, double);

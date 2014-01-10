@@ -1,10 +1,16 @@
 ffmpeg-*/
 install/
 *-build/
+_*/
 
 *.exe
 *.dll
 *.lib
+*.obj
 *.o
 *.def
 *.exp
+
+*.aps
+
+/*.mp4
