@@ -57,16 +57,16 @@ static const int FMT_MAP[][2] = {
     {0, AV_PIX_FMT_NONE},
 };
 static const int FMT_MAP_SZ = sizeof(FMT_MAP) / (2*sizeof(int));
-static AVPixelFormat cvtfmt(int fmt)
+AVPixelFormat cvtfmt(int fmt)
 {
     for (int i = 0; i < FMT_MAP_SZ; i++)
     {
-    	if (FMT_MAP[i][0] == fmt)
+        if (FMT_MAP[i][0] == fmt)
             return (AVPixelFormat) FMT_MAP[i][1];
     }
     return AV_PIX_FMT_NONE;
 }
-static int cvtfmt(AVPixelFormat fmt)
+int cvtfmt(AVPixelFormat fmt)
 {
     for (int i = 0; i < FMT_MAP_SZ; i++)
     {
@@ -296,7 +296,7 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t* data[4], int step[4])
         return false;
 
     if (dst_frame) {
-        if (!img_convert_ctx) {
+        if (!dst_frame->data[0]) {
             // create conversion context 
             img_convert_ctx = sws_getCachedContext(
                 img_convert_ctx,
@@ -313,8 +313,6 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t* data[4], int step[4])
                 LOGE("Cannot initialize the conversion context!");
                 return false;
             }
-        }
-        if (!dst_frame->data[0]) {
             if (avpicture_alloc((AVPicture*)dst_frame, dst_pix_fmt, dst_width, dst_height) != 0) {
                 LOGE("Memory error");
                 return false;
@@ -555,10 +553,6 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
                 LOGE("Memory error");
                 return false;
             }
-        }
-        if (img_convert_ctx) {
-            sws_freeContext(img_convert_ctx);
-            img_convert_ctx = NULL;
         }
     }
     if (dst_frame && dst_frame->data[0])
@@ -966,8 +960,7 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
         }
 
         if (sws_scale(img_convert_ctx, input_picture->data,
-                      input_picture->linesize, 0,
-                      frame_height,
+                      input_picture->linesize, 0, frame_height,
                       picture->data, picture->linesize) < 0)
             return false;
     } else {

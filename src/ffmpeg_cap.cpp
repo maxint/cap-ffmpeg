@@ -65,3 +65,74 @@ int ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data)
     return writer->writeFrame(data);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+struct SwsContext_FFMPEG
+{
+    SwsContext_FFMPEG() {
+        img_convert_ctx = NULL;
+        height = 0;
+    }
+    ~SwsContext_FFMPEG() {
+        if (img_convert_ctx) sws_freeContext(img_convert_ctx);
+    }
+
+    bool getCached(
+        int srcW, int srcH, int srcFmt,
+        int dstW, int dstH, int dstFmt,
+        int flags)
+    {
+        img_convert_ctx = sws_getCachedContext(
+            img_convert_ctx,
+            srcW, srcH, cvtfmt(srcFmt),
+            dstW, dstH, cvtfmt(dstFmt),
+            flags,
+            NULL, NULL, NULL
+            );
+        height = srcH;
+        return img_convert_ctx != NULL;
+    }
+
+    int scale(
+        const uint8_t *const src[], const int srcStride[], 
+        uint8_t* dst[], int dstStride[])
+    {
+        return sws_scale(
+            img_convert_ctx,
+            src, srcStride,
+            0,
+            height,
+            dst, dstStride);
+    }
+private:
+    int height;
+    SwsContext* img_convert_ctx;
+};
+
+SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
+                                           int srcW, int srcH, int srcFmt,
+                                           int dstW, int dstH, int dstFmt,
+                                           int flags)
+{
+    if (!ctx)
+        ctx = new SwsContext_FFMPEG();
+    if (ctx->getCached(srcW, srcH, srcFmt, dstW, dstH, dstFmt, flags))
+        return ctx;
+    delete ctx;
+    return NULL;
+}
+
+void ff_sws_freeContext(SwsContext_FFMPEG** ctx)
+{
+    if (ctx && *ctx) {
+        delete *ctx;
+        *ctx = NULL;
+    }
+}
+
+int ff_sws_scale(SwsContext_FFMPEG* ctx,
+                 const uint8_t *const src[], const int srcStride[],
+                 uint8_t* dst[], int dstStride[])
+{
+    return ctx->scale(src, srcStride, dst, dstStride);
+}

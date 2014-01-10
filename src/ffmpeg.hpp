@@ -92,4 +92,7 @@ private:
     SwsContext      * img_convert_ctx;
 };
 
+AVPixelFormat cvtfmt(int fmt);
+int cvtfmt(AVPixelFormat fmt);
+
 #endif /* end of include guard */
