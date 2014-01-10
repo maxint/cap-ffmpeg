@@ -11,8 +11,8 @@
 extern "C" {
 #endif
 
-struct VideoCapture_FFMPEG;
-struct VideoWriter_FFMPEG;
+typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
+typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
 
 // FFMPEG_FCC('Y800')
 #define FFMPEG_FCC(ch4) ((((DWORD)(ch4) & 0xFF) << 24) |     \
