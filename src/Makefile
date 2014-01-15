@@ -22,7 +22,9 @@ LIBS= -L../mingw32-build/install/lib \
 	  -lavformat -lavcodec -lavutil -lswscale
 CPPFLAGS += -D__STDC_CONSTANT_MACROS -DFFMPEG_CAP_EXPORTS
 LDFLAGS += -Wl,--output-def=$(DEFOUT)
-PREFIX= ../install
+ifndef PREFIX
+	PREFIX= ../install
+endif
 
 #### Build
 
@@ -37,11 +39,11 @@ clean:
 	@$(RM) *.o *.dll *.lib *.def *.exp
 
 install:
-	$(RM) $(PREFIX)
-	$(MKDIR) $(PREFIX){,/inc,/lib,/bin}
-	$(CP) $(HEADERS) $(PREFIX)/inc/
-	$(CP) $(LIBOUT) $(PREFIX)/lib/
-	$(CP) $(DLLOUT) $(DEFOUT) $(PREFIX)/bin/
+	$(MKDIR) $(PREFIX)/{,include,lib,bin,cmake}
+	$(CP) $(HEADERS) $(PREFIX)/include
+	$(CP) $(LIBOUT) $(PREFIX)/lib
+	$(CP) $(DLLOUT) $(PREFIX)/bin
+	$(CP) ffmpeg_cap-config.cmake $(PREFIX)/cmake/$(MNAME}-config.cmake
 
 #### Detail Build
 
