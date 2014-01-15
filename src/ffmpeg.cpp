@@ -964,7 +964,7 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
                       picture->data, picture->linesize) < 0)
             return false;
     } else {
-        avpicture_fill((AVPicture *)picture, (uint8_t *) data,
+        avpicture_fill((AVPicture *)picture, data,
                        input_pix_fmt, frame_width, frame_height);
     }
 

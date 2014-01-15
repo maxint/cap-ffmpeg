@@ -11,15 +11,6 @@
 extern "C" {
 #endif
 
-typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
-typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
-
-// FFMPEG_FCC('Y800')
-#define FFMPEG_FCC(ch4) ((((DWORD)(ch4) & 0xFF) << 24) |     \
-                         (((DWORD)(ch4) & 0xFF00) << 8) |    \
-                         (((DWORD)(ch4) & 0xFF0000) >> 8) |  \
-                         (((DWORD)(ch4) & 0xFF000000) >> 24))
-
 enum {
     // read-write properties
     FFMPEG_CAP_PROP_FRAME_WIDTH=0,
@@ -36,6 +27,15 @@ enum {
     FFMPEG_CAP_PROP_FPS=13,
     FFMPEG_CAP_PROP_FRAME_COUNT=14,
 };
+
+// FFMPEG_FCC('Y800')
+#define FFMPEG_FCC(ch4) ((((DWORD)(ch4) & 0xFF) << 24) |     \
+                         (((DWORD)(ch4) & 0xFF00) << 8) |    \
+                         (((DWORD)(ch4) & 0xFF0000) >> 8) |  \
+                         (((DWORD)(ch4) & 0xFF000000) >> 24))
+
+typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
+typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
 
 // Video Capture
 FFMPEG_CAP_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);

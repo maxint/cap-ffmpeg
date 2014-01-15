@@ -1,5 +1,7 @@
 #include "ffmpeg_cap.h"
 #include "ffmpeg.hpp"
+#define LOG_TAG "ffmpeg"
+#include "common/log.hpp"
 
 VideoCapture_FFMPEG* ff_cap_create(const char* fname)
 {
@@ -72,9 +74,14 @@ struct SwsContext_FFMPEG
     SwsContext_FFMPEG() {
         img_convert_ctx = NULL;
         height = 0;
+        dst_width = dst_height = 0;
+        dst_fmt = 0;
+        memset(&dst_picture, 0, sizeof(dst_picture));
+        need_cvt = false;
     }
     ~SwsContext_FFMPEG() {
         if (img_convert_ctx) sws_freeContext(img_convert_ctx);
+        if (dst_picture.data[0]) avpicture_free(&dst_picture);
     }
 
     bool getCached(
@@ -82,31 +89,67 @@ struct SwsContext_FFMPEG
         int dstW, int dstH, int dstFmt,
         int flags)
     {
-        img_convert_ctx = sws_getCachedContext(
-            img_convert_ctx,
-            srcW, srcH, cvtfmt(srcFmt),
-            dstW, dstH, cvtfmt(dstFmt),
-            flags,
-            NULL, NULL, NULL
-            );
-        height = srcH;
-        return img_convert_ctx != NULL;
+        need_cvt = srcW != dstW || srcH != dstH || srcFmt != dstFmt;
+        if (need_cvt) {
+            img_convert_ctx = sws_getCachedContext(
+                img_convert_ctx,
+                srcW, srcH, cvtfmt(srcFmt),
+                dstW, dstH, cvtfmt(dstFmt),
+                flags,
+                NULL, NULL, NULL
+                );
+            if (!img_convert_ctx)
+                return false;
+            if (dst_picture.data[0]) avpicture_free(&dst_picture);
+            if (avpicture_alloc(&dst_picture, cvtfmt(dstFmt), dstW, dstH) != 0)
+                return false;
+        }
+        dst_width = dstW;
+        dst_height = dstH;
+        dst_fmt = dstFmt;
+        return true;
     }
 
     int scale(
-        const uint8_t *const src[], const int srcStride[], 
-        uint8_t* dst[], int dstStride[])
+        const uint8_t *const src[4], const int srcStride[4], 
+        uint8_t* dst[4], int dstStride[4]=NULL)
     {
-        return sws_scale(
-            img_convert_ctx,
-            src, srcStride,
-            0,
-            height,
-            dst, dstStride);
+        if (!dst && !dstStride)
+            return -1;
+
+        if (!img_convert_ctx)
+            return -1;
+
+        if (need_cvt) {
+            int goth = sws_scale(
+                img_convert_ctx,
+                src, srcStride,
+                0,
+                height,
+                dst_picture.data,
+                dst_picture.linesize);
+            if (goth != dst_height)
+                return false;
+
+            memcpy(dst, dst_picture.data, sizeof(uint8_t*) * 4);
+            if (dstStride)
+                memcpy(dstStride, dst_picture.linesize, sizeof(int) * 4);
+            return goth;
+        } else {
+            memcpy(dst, src, sizeof(uint8_t*) * 4);
+            if (dstStride)
+                memcpy(dstStride, srcStride, sizeof(int) * 4);
+            return dst_height;
+        }
     }
 private:
     int height;
+    int dst_width;
+    int dst_height;
+    int dst_fmt;
+    bool need_cvt;
     SwsContext* img_convert_ctx;
+    AVPicture dst_picture;
 };
 
 SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
