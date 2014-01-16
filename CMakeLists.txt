@@ -8,7 +8,7 @@ set(PREFIX "${CMAKE_SOURCE_DIR}/install")
 if(DEFINED ENV{PREFIX})
   set(PREFIX "$ENV{PREFIX}")
 endif()
-set(CMAKE_MODULE_PATH "${PREFIX}/cmake")
+set(CMAKE_MODULE_PATH "${PREFIX}/lib/cmake")
 set(CMAKE_INSTALL_PREFIX "${PREFIX}")
 
 add_subdirectory(test)

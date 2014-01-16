@@ -39,11 +39,11 @@ clean:
 	@$(RM) *.o *.dll *.lib *.def *.exp
 
 install:
-	$(MKDIR) $(PREFIX)/{,include,lib,bin,cmake}
+	$(MKDIR) $(PREFIX)/{,include,lib,bin,cmake/lib}
 	$(CP) $(HEADERS) $(PREFIX)/include
 	$(CP) $(LIBOUT) $(PREFIX)/lib
 	$(CP) $(DLLOUT) $(PREFIX)/bin
-	$(CP) ffmpeg_cap-config.cmake $(PREFIX)/cmake/$(MNAME}-config.cmake
+	$(CP) ffmpeg_cap-config.cmake $(PREFIX)/cmake/lib/$(MNAME}-config.cmake
 
 #### Detail Build
 
