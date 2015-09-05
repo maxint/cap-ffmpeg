@@ -1,10 +1,10 @@
-#ifndef __FFMPEG_CAP_H__
-#define __FFMPEG_CAP_H__
+#ifndef __FFMPEG_H__
+#define __FFMPEG_H__
 
-#ifdef FFMPEG_CAP_EXPORTS
-#   define FFMPEG_CAP_DLL __declspec(dllexport)
+#ifdef FFMPEG_EXPORTS
+#   define FFMPEG_DLL __declspec(dllexport)
 #else
-#   define FFMPEG_CAP_DLL __declspec(dllimport)
+#   define FFMPEG_DLL
 #endif
 
 #ifdef __cplusplus
@@ -13,45 +13,56 @@ extern "C" {
 
 enum {
     // read-write properties
-    FFMPEG_CAP_PROP_FRAME_WIDTH=0,
-    FFMPEG_CAP_PROP_FRAME_HEIGHT=1,
-    FFMPEG_CAP_PROP_PIXEL_FORMAT=2,
-    FFMPEG_CAP_PROP_POS_MSEC=3,
-    FFMPEG_CAP_PROP_POS_FRAMES=4,
-    FFMPEG_CAP_PROP_POS_AVI_RATIO=5,
+    FFMPEG_PROP_FRAME_WIDTH=0,
+    FFMPEG_PROP_FRAME_HEIGHT=1,
+    FFMPEG_PROP_PIXEL_FORMAT=2,
+    FFMPEG_PROP_POS_MSEC=3,
+    FFMPEG_PROP_POS_FRAMES=4,
+    FFMPEG_PROP_POS_AVI_RATIO=5,
 
     // read-only properties
-    FFMPEG_CAP_PROP_ORIGINAL_FRAME_WIDTH=10,
-    FFMPEG_CAP_PROP_ORIGINAL_FRAME_HEIGHT=11,
-    FFMPEG_CAP_PROP_FOURCC=12,
-    FFMPEG_CAP_PROP_FPS=13,
-    FFMPEG_CAP_PROP_FRAME_COUNT=14,
+    FFMPEG_PROP_ORIGINAL_FRAME_WIDTH=10,
+    FFMPEG_PROP_ORIGINAL_FRAME_HEIGHT=11,
+    FFMPEG_PROP_FOURCC=12,
+    FFMPEG_PROP_FPS=13,
+    FFMPEG_PROP_FRAME_COUNT=14,
+    FFMPEG_PROP_BUFFER_SIZE=15,
 };
 
 // FFMPEG_FCC('Y800')
-#define FFMPEG_FCC(ch4) ((((DWORD)(ch4) & 0xFF) << 24) |     \
-                         (((DWORD)(ch4) & 0xFF00) << 8) |    \
-                         (((DWORD)(ch4) & 0xFF0000) >> 8) |  \
-                         (((DWORD)(ch4) & 0xFF000000) >> 24))
+// http://www.fourcc.org/fourcc.php
+#define FFMPEG_FCC(ch4) ((((ch4) & 0xFF) << 24) | (((ch4) & 0xFF00) << 8) (((ch4) & 0xFF0000) >> 8) | (((ch4) & 0xFF000000) >> 24))
 
 typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
 typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
 
 // Video Capture
-FFMPEG_CAP_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
-FFMPEG_CAP_DLL void   ff_cap_release(VideoCapture_FFMPEG** cap);
-FFMPEG_CAP_DLL double ff_cap_get(VideoCapture_FFMPEG* cap, int propid);
-FFMPEG_CAP_DLL int    ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val);
-FFMPEG_CAP_DLL int    ff_cap_grab(VideoCapture_FFMPEG* cap);
-FFMPEG_CAP_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap,
-                                      unsigned char* data[4], int step[4]);
+FFMPEG_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
+FFMPEG_DLL void   ff_cap_release(VideoCapture_FFMPEG** cap);
+FFMPEG_DLL double ff_cap_get(VideoCapture_FFMPEG* cap, int propid);
+FFMPEG_DLL int    ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val);
+FFMPEG_DLL int    ff_cap_grab(VideoCapture_FFMPEG* cap);
+FFMPEG_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
+
 
 // Video Writer
-FFMPEG_CAP_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname,
-                                                    int fourcc, double fps,
-                                                    int width, int height, int pix_fmt);
-FFMPEG_CAP_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
-FFMPEG_CAP_DLL int  ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
+FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps, int width, int height, int src_pix_fmt);
+FFMPEG_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
+FFMPEG_DLL int  ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
+
+
+// Return the size in bytes of the amount of data required to store an image with the given parameters.
+// @see av_image_get_buffer_size(), avpicture_get_size()
+FFMPEG_DLL int  ff_get_buffer_size(int pix_fmt, int width, int height);
+
+// Return the pixel format corresponding to name. Return -1 if no pixel format has been found.
+// @param name "gray16", "nv21"
+// @see av_get_pix_fmt()
+FFMPEG_DLL int  ff_get_pix_fmt(const char *name);
+
+// Return the short name for a pixel format, NULL in case pix_fmt is unknown.
+// @see av_get_pix_fmt_name()
+FFMPEG_DLL const char* ff_get_pix_fmt_name(int pix_fmt);
 
 // swcale
 enum {
@@ -81,15 +92,15 @@ typedef struct SwsContext_FFMPEG SwsContext_FFMPEG;
  * Be warned that srcFilter and dstFilter are not checked, they
  * are assumed to remain the same.
  */
-FFMPEG_CAP_DLL SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
-                                                          int srcW, int srcH, int srcFmt,
-                                                          int dstW, int dstH, int dstFmt,
-                                                          int flags);
+FFMPEG_DLL SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
+                                                      int srcW, int srcH, int srcFmt,
+                                                      int dstW, int dstH, int dstFmt,
+                                                      int flags);
 /**
  * Free the swscaler context swsContext.
  * If swsContext is NULL, then does nothing.
  */
-FFMPEG_CAP_DLL void ff_sws_freeContext(SwsContext_FFMPEG** ctx);
+FFMPEG_DLL void ff_sws_freeContext(SwsContext_FFMPEG** ctx);
 
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
@@ -112,12 +123,12 @@ FFMPEG_CAP_DLL void ff_sws_freeContext(SwsContext_FFMPEG** ctx);
  *                  the destination image
  * @return          the height of the output slice
  */
-FFMPEG_CAP_DLL int  ff_sws_scale(SwsContext_FFMPEG* ctx,
-                                 const unsigned char*const src[], const int srcStride[], 
-                                 unsigned char* dst[], int dstStride[]);
+FFMPEG_DLL int  ff_sws_scale(SwsContext_FFMPEG* ctx,
+                             const unsigned char*const src[], const int srcStride[],
+                             unsigned char* dst[], int dstStride[]);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __FFMPEG_CAP_H__
+#endif // __FFMPEG_H__

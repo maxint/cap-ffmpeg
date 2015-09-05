@@ -4,8 +4,7 @@ TARGET_OS=mingw32
 
 # Build ffmpeg static libraries
 
-BUILD_DIR=$TARGET_OS-build
-rm $BUILD_DIR -rf
+BUILD_DIR=build-$TARGET_OS
 mkdir $BUILD_DIR -p
 cd $BUILD_DIR
 
@@ -30,8 +29,6 @@ cd $BUILD_DIR
     --disable-avfilter \
     --disable-network \
     --disable-everything \
-    --enable-demuxer=mov \
-    --enable-demuxer=h264 \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \
@@ -43,6 +40,7 @@ cd $BUILD_DIR
     --enable-encoder=rawvideo \
     --enable-encoder=mjpeg \
     --enable-encoder=h263 \
+    --enable-encoder=libx264 \
     --enable-encoder=mpeg4 \
     --enable-hwaccel=h263_vaapi \
     --enable-hwaccel=h263_vdpau \
@@ -56,6 +54,8 @@ cd $BUILD_DIR
     --enable-parser=h263 \
     --enable-parser=h264 \
     --enable-parser=mpeg4video \
+    --enable-demuxer=mov \
+    --enable-demuxer=h264 \
     --enable-muxer=mp4 \
     --enable-muxer=mov \
     --enable-muxer=ogg \
@@ -63,20 +63,7 @@ cd $BUILD_DIR
     --enable-muxer=rawvideo \
     --enable-zlib \
 
-make clean
-make -j4 install
+#make clean
+#make -j4 install
 
-#$PREBUILT/bin/arm-linux-androideabi-ar d libavcodec/libavcodec.a inverse.o
-
-#$PREBUILT/bin/arm-linux-androideabi-ld -rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib  -soname libffmpeg.so \
-    #-shared -nostdlib  -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so \
-    #libavcodec/libavcodec.a libavformat/libavformat.a libavutil/libavutil.a libswscale/libswscale.a \
-    #-lc -lm -lz -ldl -llog  --warn-once  --dynamic-linker=/system/bin/linker \
-    #$PREBUILT/lib/gcc/arm-linux-androideabi/4.4.3/libgcc.a
-
-cd -
-
-## Build C wrapper
-cd src
-make && make install
 cd -

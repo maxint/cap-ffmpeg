@@ -5,7 +5,7 @@ extern "C" {
     #include <libavformat/avformat.h>
     #include <libavcodec/avcodec.h>
     #include <libswscale/swscale.h>
-}
+} // extern "C"
 #include "common/thread.hpp"
 #include "common/utils.hpp"
 #include "ffmpeg_cap.h"
@@ -19,7 +19,8 @@ struct VideoCapture_FFMPEG
     void    close();
 
     bool    grabFrame();
-    bool    retrieveFrame(uint8_t* data[4], int step[4]);
+    bool    retrieveFrame(const uint8_t* data[4], int step[4]);
+    const uint8_t* retrieveFrame();
 
     double  getProperty(int);
     bool    setProperty(int, double);
@@ -30,7 +31,7 @@ struct VideoCapture_FFMPEG
 private:
     void    init();
     void    destory();
-    bool set_target_picture(AVPixelFormat fmt, int width, int height);
+    bool    set_target_picture(AVPixelFormat fmt, int width, int height);
 
     int64_t get_total_frames();
     double  get_duration_sec();
@@ -52,6 +53,7 @@ private:
     int               dst_width, dst_height;
     SwsContext      * img_convert_ctx;
     AVFrame         * dst_frame;
+    int				  buf_size;
 
     int64_t           frame_number;
     int64_t           first_frame_number;
@@ -70,7 +72,10 @@ struct VideoWriter_FFMPEG
     VideoWriter_FFMPEG()  { init(); }
     ~VideoWriter_FFMPEG() { close(); }
 
-    bool open(const char* filename, int fourcc, double fps, int width, int height, int pix_fmt);
+    // NOTE: output pixel format is PIX_FMT_YUV420P, and it is good for lossy formats, MPEG, etc.
+    //       If input and output pixel formats are different, input pixel data is converted to
+    //       destination pixel format before write to video stream.
+    bool open(const char* filename, double fps, int width, int height, AVPixelFormat src_pix_fmt);
     void close();
     bool writeFrame(const uint8_t* data);
 
@@ -91,8 +96,5 @@ private:
     bool              ok;
     SwsContext      * img_convert_ctx;
 };
-
-AVPixelFormat cvtfmt(int fmt);
-int cvtfmt(AVPixelFormat fmt);
 
 #endif /* end of include guard */

@@ -1,7 +1,12 @@
 #include "ffmpeg_cap.h"
 #include "ffmpeg.hpp"
+
 #define LOG_TAG "ffmpeg"
 #include "common/log.hpp"
+
+extern "C" {
+	#include <libavutil/imgutils.h>
+} // extern "C"
 
 VideoCapture_FFMPEG* ff_cap_create(const char* fname)
 {
@@ -37,18 +42,17 @@ int ff_cap_grab(VideoCapture_FFMPEG* cap)
     return cap->grabFrame();
 }
 
-int ff_cap_retrieve(VideoCapture_FFMPEG* cap, unsigned char* data[4], int step[4])
+int ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4])
 {
     return cap->retrieveFrame(data, step);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps,
-                                     int width, int height, int pix_fmt)
+VideoWriter_FFMPEG* ff_writer_create(const char* fname, double fps, int width, int height, int src_pix_fmt)
 {
     VideoWriter_FFMPEG *writer = new VideoWriter_FFMPEG();
-    if (writer->open(fname, fourcc, fps, width, height, pix_fmt))
+    if (writer->open(fname, fps, width, height, (AVPixelFormat) src_pix_fmt))
         return writer;
     delete writer;
     return NULL;
@@ -69,6 +73,24 @@ int ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data)
 
 //////////////////////////////////////////////////////////////////////////
 
+int ff_get_buffer_size(int pix_fmt, int width, int height)
+{
+	return avpicture_get_size((AVPixelFormat) pix_fmt, width, height);
+}
+
+int ff_get_pix_fmt(const char *name)
+{
+	return (int) av_get_pix_fmt(name);
+}
+
+const char* ff_get_pix_fmt_name(int pix_fmt)
+{
+	return av_get_pix_fmt_name((AVPixelFormat) pix_fmt);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+/*
 struct SwsContext_FFMPEG
 {
     SwsContext_FFMPEG() {
@@ -93,15 +115,15 @@ struct SwsContext_FFMPEG
         if (need_cvt) {
             img_convert_ctx = sws_getCachedContext(
                 img_convert_ctx,
-                srcW, srcH, cvtfmt(srcFmt),
-                dstW, dstH, cvtfmt(dstFmt),
+                srcW, srcH, srcFmt,
+                dstW, dstH, dstFmt,
                 flags,
                 NULL, NULL, NULL
                 );
             if (!img_convert_ctx)
                 return false;
             if (dst_picture.data[0]) avpicture_free(&dst_picture);
-            if (avpicture_alloc(&dst_picture, cvtfmt(dstFmt), dstW, dstH) != 0)
+            if (avpicture_alloc(&dst_picture, dstFmt, dstW, dstH) != 0)
                 return false;
         }
         dst_width = dstW;
@@ -179,3 +201,4 @@ int ff_sws_scale(SwsContext_FFMPEG* ctx,
 {
     return ctx->scale(src, srcStride, dst, dstStride);
 }
+*/

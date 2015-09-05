@@ -1,6 +1,7 @@
 #ifndef __JNI_HANDLE_HPP__
 #define __JNI_HANDLE_HPP__
 
+#include <jni.h>
 #include <stdlib.h>
 
 inline static jfieldID getHandleField(JNIEnv *env, jobject obj)

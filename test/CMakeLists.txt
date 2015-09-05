@@ -1,15 +1,10 @@
-set(PROJNAME ffmpeg_cap_test)
-add_executable(${PROJNAME}
+cmake_minimum_required(VERSION 2.8.12)
+
+project(ffmpeg_cap_test)
+
+add_executable(${PROJECT_NAME}
   WIN32
   resource.h
   Resource.rc
   ffmpeg_cap_test.c)
- 
-find_package(ffmpeg_cap)
-target_link_libraries(${PROJNAME} ffmpeg_cap)
-
-install(TARGETS ${PROJNAME}
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  )
+target_include_directories(${PROJECT_NAME} PRIVATE ../install/inc)

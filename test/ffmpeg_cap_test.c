@@ -7,6 +7,7 @@
 #include "resource.h"
 #include <tchar.h>
 #include <stdio.h>
+#include <strsafe.h>
 
 #define MAX_LOADSTRING 100
 
@@ -23,11 +24,57 @@ unsigned char *data[4] = {0};
 int step[4] = {0};
 BITMAPINFO bmi;
 
+typedef VideoCapture_FFMPEG* (*ff_cap_create_t)(const char* fname);
+typedef void   (*ff_cap_release_t)(VideoCapture_FFMPEG** cap);
+typedef double (*ff_cap_get_t)(VideoCapture_FFMPEG* cap, int propid);
+typedef int    (*ff_cap_set_t)(VideoCapture_FFMPEG* cap, int propid, double val);
+typedef int    (*ff_cap_grab_t)(VideoCapture_FFMPEG* cap);
+typedef int    (*ff_cap_retrieve_t)(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
+
+ff_cap_create_t    ff_cap_create_f = 0;
+ff_cap_release_t   ff_cap_release_f = 0;
+ff_cap_get_t       ff_cap_get_f = 0;
+ff_cap_set_t       ff_cap_set_f = 0;
+ff_cap_grab_t      ff_cap_grab_f = 0;
+ff_cap_retrieve_t  ff_cap_retrieve_f = 0;
+
 // Forward declarations of functions included in this code module:
-ATOM				MyRegisterClass(HINSTANCE hInstance);
+ATOM				RegisterWindowClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+
+void ReportWindowError(LPTSTR lpszFunction)
+{
+    // Retrieve the system error message for the last-error code
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError();
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL);
+
+    // Display the error message and exit the process
+
+    lpDisplayBuf = (LPVOID) LocalAlloc(LMEM_ZEROINIT,
+                                       (lstrlen((LPCTSTR) lpMsgBuf) + lstrlen((LPCTSTR) lpszFunction) + 40) * sizeof(TCHAR));
+    StringCchPrintf((LPTSTR) lpDisplayBuf,
+                    LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+                    TEXT("%s failed with error %d: %s"),
+                    lpszFunction, dw, lpMsgBuf);
+    MessageBox(NULL, (LPCTSTR) lpDisplayBuf, TEXT("Error"), MB_ICONEXCLAMATION | MB_OK);
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+    //ExitProcess(dw);
+}
 
 int APIENTRY WinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -35,25 +82,51 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                      int       nCmdShow)
 {
  	// TODO: Place code here.
-	MSG msg;
-    HACCEL hAccelTable;
+    MSG msg = {0};
+    HACCEL hAccelTable = {0};
+    HMODULE hModule = 0;
 
     if (__argc != 2)
     {
-        MessageBox(NULL, "usage: <EXE> <VIDEO FILE>", "Help", MB_OK | MB_ICONSTOP);
+        MessageBox(NULL, TEXT("usage: <EXE> <VIDEO FILE>"), TEXT("Help"), MB_OK | MB_ICONSTOP);
         return -1;
+    }
+
+    hModule = LoadLibrary("ffmpeg_cap.dll");
+    if (0 == hModule)
+    {
+        MessageBox(NULL, TEXT("Can not load ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        goto EXIT;
+    }
+
+    ff_cap_create_f     = (ff_cap_create_t  ) GetProcAddress(hModule, TEXT("ff_cap_create"));
+    ff_cap_release_f    = (ff_cap_release_t ) GetProcAddress(hModule, TEXT("ff_cap_release"));
+    ff_cap_get_f        = (ff_cap_get_t     ) GetProcAddress(hModule, TEXT("ff_cap_get"));
+    ff_cap_set_f        = (ff_cap_set_t     ) GetProcAddress(hModule, TEXT("ff_cap_set"));
+    ff_cap_grab_f       = (ff_cap_grab_t    ) GetProcAddress(hModule, TEXT("ff_cap_grab"));
+    ff_cap_retrieve_f   = (ff_cap_retrieve_t) GetProcAddress(hModule, TEXT("ff_cap_retrieve"));
+
+    if (ff_cap_create_f == 0 || ff_cap_release_f == 0 || ff_cap_get_f == 0 ||
+        ff_cap_set_f == 0 || ff_cap_grab_f == 0 || ff_cap_retrieve_f == 0)
+    {
+        MessageBox(NULL, TEXT("Can not find enough process address in ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        goto EXIT;
     }
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    _stprintf(szTitle, "%s - %s", szTitle, __argv[1]);
+    StringCchPrintf(szTitle, MAX_LOADSTRING, TEXT("%s - %s"), szTitle, __argv[1]);
 	LoadString(hInstance, IDS_WINDOW_CLASS, szWindowClass, MAX_LOADSTRING);
-	MyRegisterClass(hInstance);
+	if (!RegisterWindowClass(hInstance))
+    {
+        ReportWindowError(TEXT("RegisterClassEx"));
+        goto EXIT;
+    }
 
 	// Perform application initialization:
 	if (!InitInstance (hInstance, nCmdShow)) 
 	{
-		return FALSE;
+        goto EXIT;
 	}
 
 	hAccelTable = LoadAccelerators(hInstance, (LPCTSTR)IDR_DSHOW_CAP_DEMO);
@@ -68,11 +141,15 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		}
 	}
 
+EXIT:
+    if (hModule)
+        FreeLibrary(hModule);
+
 	return msg.wParam;
 }
 
 //
-//  FUNCTION: MyRegisterClass()
+//  FUNCTION: RegisterWindowClass()
 //
 //  PURPOSE: Registers the window class.
 //
@@ -84,7 +161,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 //    so that the application will get 'well formed' small icons associated
 //    with it.
 //
-ATOM MyRegisterClass(HINSTANCE hInstance)
+ATOM RegisterWindowClass(HINSTANCE hInstance)
 {
 	WNDCLASSEX wcex;
 
@@ -122,10 +199,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // Store instance handle in our global variable
 
     hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+                        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
 
     if (!hWnd)
     {
+        ReportWindowError(TEXT("CreateWindow"));
         return FALSE;
     }
 
@@ -152,14 +230,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message) 
 	{
 	case WM_CREATE:
-        cap = ff_cap_create(__argv[1]);
+        cap = ff_cap_create_f(__argv[1]);
         if (!cap) {
             MessageBox(hWnd, "Can not open given video file", "Error", MB_OK | MB_ICONERROR);
             DestroyWindow(hWnd);
             break;
         }
-        nWidth  = (int)ff_cap_get(cap,FFMPEG_CAP_PROP_FRAME_WIDTH);
-        nHeight = (int)ff_cap_get(cap,FFMPEG_CAP_PROP_FRAME_HEIGHT);
+        nWidth  = (int)ff_cap_get_f(cap, FFMPEG_PROP_FRAME_WIDTH);
+        nHeight = (int)ff_cap_get_f(cap, FFMPEG_PROP_FRAME_HEIGHT);
 		nTimer = SetTimer(hWnd, 1, 30, NULL);
 
         SetWindowPos(hWnd, 0, 0, 0, nWidth, nHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -180,12 +258,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_DESTROY:
         KillTimer(hWnd, nTimer);
-        ff_cap_release(&cap);
+        ff_cap_release_f(&cap);
         PostQuitMessage(0);
         break;
 
 	case WM_TIMER:
-		if (ff_cap_grab(cap) && ff_cap_retrieve(cap, (unsigned char**)data, (int *)step)) {
+		if (ff_cap_grab_f(cap) && ff_cap_retrieve_f(cap, data, step)) {
 			InvalidateRect(hWnd, NULL, FALSE);
 		}
 
@@ -204,7 +282,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 
         case IDM_RELOAD:
-            ff_cap_set(cap, FFMPEG_CAP_PROP_POS_MSEC, 0);
+            ff_cap_set_f(cap, FFMPEG_PROP_POS_MSEC, 0);
             SetWindowPos(hWnd, 0, 0, 0, nWidth, nHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             break;
 
@@ -225,7 +303,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //SetStretchBltMode(hdc, MAXSTRETCHBLTMODE);
             SetStretchBltMode(hdc, COLORONCOLOR);
             StretchDIBits(hdc, 0, rt.bottom-1, rt.right, -rt.bottom, 
-                0, 0, nWidth, nHeight, data[0], &bmi, DIB_RGB_COLORS, SRCCOPY);
+                          0, 0, nWidth, nHeight, data[0], &bmi, DIB_RGB_COLORS, SRCCOPY);
             EndPaint(hWnd, &ps);
         }
 		break;

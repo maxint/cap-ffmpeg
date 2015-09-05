@@ -4,7 +4,6 @@
 #define LOG_TAG "ffmpeg"
 #include "common/log.hpp"
 
-#include "common/asvloffscreen.h"
 #include <math.h>       /* floor */
 
 class InternalFFMpegRegister
@@ -42,39 +41,11 @@ static const char* err2str(int err) {
     av_strerror(err, msg, MSG_SZ);
     return msg;
 }
-#define PRINT_ERR(err) { if (err != 0) LOGE("AVERROR: %s", err2str(err)); }
 static double r2d(AVRational r) {
     return r.num == 0 || r.den == 0 ? 0. : (double)r.num / (double)r.den;
 }
-static const int FMT_MAP[][2] = {
-    {ASVL_PAF_GRAY, AV_PIX_FMT_GRAY8},
-    {ASVL_PAF_RGB24_B8G8R8, AV_PIX_FMT_BGR24},
-    {ASVL_PAF_RGB24_R8G8B8, AV_PIX_FMT_RGB24},
-    {ASVL_PAF_YUYV, AV_PIX_FMT_YUYV422},
-    {ASVL_PAF_I420, AV_PIX_FMT_YUV420P},
-    {ASVL_PAF_NV12, AV_PIX_FMT_NV12},
-    {ASVL_PAF_NV21, AV_PIX_FMT_NV21},
-    {0, AV_PIX_FMT_NONE},
-};
-static const int FMT_MAP_SZ = sizeof(FMT_MAP) / (2*sizeof(int));
-AVPixelFormat cvtfmt(int fmt)
-{
-    for (int i = 0; i < FMT_MAP_SZ; i++)
-    {
-        if (FMT_MAP[i][0] == fmt)
-            return (AVPixelFormat) FMT_MAP[i][1];
-    }
-    return AV_PIX_FMT_NONE;
-}
-int cvtfmt(AVPixelFormat fmt)
-{
-    for (int i = 0; i < FMT_MAP_SZ; i++)
-    {
-        if (FMT_MAP[i][1] == fmt)
-            return FMT_MAP[i][0];
-    }
-    return 0;
-}
+
+#define PRINT_IF_ERR(err) { if (err != 0) LOGE("AVERROR: %s, %d in %s", err2str(err), __LINE__, __FILE__); }
 
 void VideoCapture_FFMPEG::init()
 {
@@ -168,21 +139,21 @@ bool VideoCapture_FFMPEG::open(const char* fname)
     if (err < 0)
     {
         LOGE("Error opening file %s", fname);
-        PRINT_ERR(err);
+        PRINT_IF_ERR(err);
         return false;
     }
     err = avformat_find_stream_info(format_ctx, NULL);
     if (err < 0)
     {
         LOGE("Could not find codec parameters");
-        PRINT_ERR(err);
+        PRINT_IF_ERR(err);
         return false;
     }
     // Dump information about file onto standard error
     av_dump_format(format_ctx, 0, fname, 0);
     for (unsigned i = 0; i < format_ctx->nb_streams; i++)
     {
-        AVCodecContext *codec_ctx = format_ctx->streams[i]->codec;
+    	AVCodecContext *codec_ctx = format_ctx->streams[i]->codec;
         //enc->thread_count = get_number_of_cpus();
         //codec_ctx->thread_count = 1;
 
@@ -288,7 +259,7 @@ bool VideoCapture_FFMPEG::grabFrame()
     return valid;
 }
 
-bool VideoCapture_FFMPEG::retrieveFrame(uint8_t* data[4], int step[4])
+bool VideoCapture_FFMPEG::retrieveFrame(const uint8_t* data[4], int step[4])
 {
     ENTER_FUNCTION;
 
@@ -339,34 +310,45 @@ bool VideoCapture_FFMPEG::retrieveFrame(uint8_t* data[4], int step[4])
     return true;
 }
 
+const uint8_t* VideoCapture_FFMPEG::retrieveFrame()
+{
+	const uint8_t* data[4];
+	if (retrieveFrame(data, NULL))
+		return data[0];
+	else
+		return NULL;
+}
+
 double VideoCapture_FFMPEG::getProperty(int property_id)
 {
     if (!video_st) return 0;
 
     switch(property_id)
     {
-    case FFMPEG_CAP_PROP_POS_MSEC:
+    case FFMPEG_PROP_POS_MSEC:
         return 1000.0*frame_number/get_fps();
-    case FFMPEG_CAP_PROP_POS_FRAMES:
+    case FFMPEG_PROP_POS_FRAMES:
         return frame_number;
-    case FFMPEG_CAP_PROP_POS_AVI_RATIO:
+    case FFMPEG_PROP_POS_AVI_RATIO:
         return r2d(video_st->time_base);
-    case FFMPEG_CAP_PROP_FRAME_COUNT:
+    case FFMPEG_PROP_FRAME_COUNT:
         return get_total_frames();
-    case FFMPEG_CAP_PROP_FRAME_WIDTH:
+    case FFMPEG_PROP_FRAME_WIDTH:
         return dst_width;
-    case FFMPEG_CAP_PROP_FRAME_HEIGHT:
+    case FFMPEG_PROP_FRAME_HEIGHT:
         return dst_height;
-    case FFMPEG_CAP_PROP_ORIGINAL_FRAME_WIDTH:
+    case FFMPEG_PROP_ORIGINAL_FRAME_WIDTH:
         return vcodec_ctx->width;
-    case FFMPEG_CAP_PROP_ORIGINAL_FRAME_HEIGHT:
+    case FFMPEG_PROP_ORIGINAL_FRAME_HEIGHT:
         return vcodec_ctx->height;
-    case FFMPEG_CAP_PROP_FPS:
+    case FFMPEG_PROP_FPS:
         return r2d(video_st->r_frame_rate);
-    case FFMPEG_CAP_PROP_FOURCC:
+    case FFMPEG_PROP_FOURCC:
         return vcodec_ctx->codec_tag;
-    case FFMPEG_CAP_PROP_PIXEL_FORMAT:
-        return cvtfmt(dst_pix_fmt);
+    case FFMPEG_PROP_PIXEL_FORMAT:
+        return (int) dst_pix_fmt;
+    case FFMPEG_PROP_BUFFER_SIZE:
+    	return buf_size;
     default:
         break;
     }
@@ -380,34 +362,34 @@ bool VideoCapture_FFMPEG::setProperty(int property_id, double value)
 
     switch(property_id)
     {
-    case FFMPEG_CAP_PROP_POS_MSEC:
-    case FFMPEG_CAP_PROP_POS_FRAMES:
-    case FFMPEG_CAP_PROP_POS_AVI_RATIO:
+    case FFMPEG_PROP_POS_MSEC:
+    case FFMPEG_PROP_POS_FRAMES:
+    case FFMPEG_PROP_POS_AVI_RATIO:
         switch(property_id)
         {
-        case FFMPEG_CAP_PROP_POS_FRAMES:
+        case FFMPEG_PROP_POS_FRAMES:
             seek((int64_t)value);
             break;
 
-        case FFMPEG_CAP_PROP_POS_MSEC:
+        case FFMPEG_PROP_POS_MSEC:
             seek(value/1000.0);
             break;
 
-        case FFMPEG_CAP_PROP_POS_AVI_RATIO:
+        case FFMPEG_PROP_POS_AVI_RATIO:
             seek((int64_t)(value*format_ctx->duration));
             break;
         }
         picture_pts = (int64_t)value;
         break;
 
-    case FFMPEG_CAP_PROP_FRAME_WIDTH:
+    case FFMPEG_PROP_FRAME_WIDTH:
         return set_target_picture(dst_pix_fmt, (int)value, dst_height);
 
-    case FFMPEG_CAP_PROP_FRAME_HEIGHT:
+    case FFMPEG_PROP_FRAME_HEIGHT:
         return set_target_picture(dst_pix_fmt, dst_width, (int)value);
 
-    case FFMPEG_CAP_PROP_PIXEL_FORMAT:
-        return set_target_picture(cvtfmt((int)value), dst_width, dst_height);
+    case FFMPEG_PROP_PIXEL_FORMAT:
+        return set_target_picture((AVPixelFormat) (int) value, dst_width, dst_height);
 
     default:
         return false;
@@ -565,6 +547,7 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
     dst_pix_fmt = fmt;
     dst_width = width;
     dst_height = height;
+    buf_size = avpicture_get_size(fmt, width, height);
 
     EXIT_FUNCTION;
 
@@ -573,7 +556,6 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
 
 /* add a video output stream to the container */
 static AVStream *add_video_stream(AVFormatContext *oc,
-                                  AVCodecID codec_id,
                                   int w, int h, int bitrate,
                                   double fps, AVPixelFormat pixel_format)
 {
@@ -589,12 +571,13 @@ static AVStream *add_video_stream(AVFormatContext *oc,
 
     c = st->codec;
     c->codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
-    if (codec_id != CODEC_ID_NONE) {
-        c->codec_id = codec_id;
-    }
 
     AVCodec *codec = avcodec_find_encoder(c->codec_id);
     c->codec_type = AVMEDIA_TYPE_VIDEO;
+
+    // get the codec tag for the given codec id.
+    const struct AVCodecTag *tags[] = { avformat_get_riff_video_tags(), 0 };
+    c->codec_tag = av_codec_get_tag(tags, c->codec_id);
 
     /* put sample parameters */
     int64_t lbit_rate = (int64_t)bitrate;
@@ -774,11 +757,9 @@ void VideoWriter_FFMPEG::close()
 }
 
 /// Create a video writer object that uses FFMPEG
-bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
-                              int width, int height, int pix_fmt)
+bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int height, AVPixelFormat src_pix_fmt)
 {
     int err;
-    double bitrate_scale = 1;
 
     close();
 
@@ -798,19 +779,11 @@ bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
         return false;
     }
 
-    /* auto detect the output format from the name and fourcc code. */
+    /* auto detect the output format from file name and fourcc code. */
     out_fmt = av_guess_format(NULL, filename, NULL);
     if (!out_fmt) {
-        LOGW("Could not deduce output format from file extension: using MPEG.");
+        LOGW("Could not deduce output format from file extension (%s): using MPEG.", filename);
         out_fmt = av_guess_format("mpeg", NULL, NULL);
-    }
-
-    /* Lookup codec_id for given fourcc */
-    const struct AVCodecTag *tags[] = { avformat_get_riff_video_tags(), 0 };
-    AVCodecID codec_id = av_codec_get_id(tags, fourcc);
-    if (codec_id == AV_CODEC_ID_NONE) {
-        LOGE("No codec id is found!");
-        return false;
     }
 
     // alloc memory for context
@@ -828,36 +801,13 @@ bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
     format_ctx->max_delay = (int)(0.7*AV_TIME_BASE);  /* This reduces buffer under-run warnings with MPEG */
 
     // set a few optimal pixel formats for lossless codecs of interest..
-    input_pix_fmt = cvtfmt(pix_fmt);
-    AVPixelFormat codec_pix_fmt;
-    switch (codec_id) {
-    case AV_CODEC_ID_JPEGLS:
-        // BGR24 or GRAY8 depending on is_color...
-        codec_pix_fmt = input_pix_fmt;
-        break;
-    case AV_CODEC_ID_HUFFYUV:
-        codec_pix_fmt = PIX_FMT_YUV422P;
-        break;
-    case AV_CODEC_ID_MJPEG:
-    case AV_CODEC_ID_LJPEG:
-        codec_pix_fmt = PIX_FMT_YUVJ420P;
-        bitrate_scale = 3;
-        break;
-    case AV_CODEC_ID_RAWVIDEO:
-        codec_pix_fmt = input_pix_fmt == PIX_FMT_GRAY8 ||
-                        input_pix_fmt == PIX_FMT_GRAY16LE ||
-                        input_pix_fmt == PIX_FMT_GRAY16BE ? input_pix_fmt : PIX_FMT_YUV420P;
-        break;
-    default:
-        // good for lossy formats, MPEG, etc.
-        codec_pix_fmt = PIX_FMT_YUV420P;
-        break;
-    }
-
-    double bitrate = min(bitrate_scale*fps*width*height, (double)INT_MAX/2);
+    input_pix_fmt = src_pix_fmt;
+    // good for lossy formats, MPEG, etc.
+    AVPixelFormat codec_pix_fmt = PIX_FMT_YUV420P;
+    double bitrate = min(fps*width*height, (double)INT_MAX/2);
 
     // TODO -- safe to ignore output audio stream?
-    video_st = add_video_stream(format_ctx, codec_id, width, height, (int)(bitrate + 0.5), fps, codec_pix_fmt);
+    video_st = add_video_stream(format_ctx, width, height, (int)(bitrate + 0.5), fps, codec_pix_fmt);
 
     /* set the output parameters (must be done even if no parameters). */
 #if 0
@@ -875,7 +825,8 @@ bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
     AVCodecContext *c;
 
     c = (video_st->codec);
-    c->codec_tag = fourcc;
+    //c->codec_tag = fourcc;
+
     /* find the video encoder */
     codec = avcodec_find_encoder(c->codec_id);
     if (!codec) {
@@ -892,7 +843,7 @@ bool VideoWriter_FFMPEG::open(const char * filename, int fourcc, double fps,
     /* open the codec */
     if ((err = avcodec_open2(c, codec, NULL)) < 0) {
         LOGE("Could not open codec '%s'", codec->name);
-        PRINT_ERR(err);
+        PRINT_IF_ERR(err);
         return false;
     }
 
@@ -969,7 +920,7 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
     }
 
     int ret = write_frame(format_ctx, video_st, picture);
-    PRINT_ERR(ret);
+    PRINT_IF_ERR(ret);
 
     return ret >= 0;
 }

@@ -3,16 +3,16 @@
 
 #include "utils.hpp"
 
-#ifdef ANDROID
+#if defined(__ANDROID__) || defined(ANDROID)
 #  include <android/log.h>
 #  ifndef LOG_TAG
 #    define  LOG_TAG    "JNI"
 #  endif
-#  define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE,LOG_TAG, __VA_ARGS__)
-#  define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,  LOG_TAG, __VA_ARGS__)
-#  define LOGI(...) __android_log_print(ANDROID_LOG_INFO,   LOG_TAG, __VA_ARGS__)
-#  define LOGW(...) __android_log_print(ANDROID_LOG_WARN,   LOG_TAG, __VA_ARGS__)
-#  define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,  LOG_TAG, __VA_ARGS__)
+#  define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE,LOG_TAG, ##__VA_ARGS__)
+#  define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,  LOG_TAG, ##__VA_ARGS__)
+#  define LOGI(...) __android_log_print(ANDROID_LOG_INFO,   LOG_TAG, ##__VA_ARGS__)
+#  define LOGW(...) __android_log_print(ANDROID_LOG_WARN,   LOG_TAG, ##__VA_ARGS__)
+#  define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,  LOG_TAG, ##__VA_ARGS__)
 #else
 #  define _LOG_(OUT, L, ...) fprintf(OUT, "%s/%s: ", LOG_TAG, L), fprintf(OUT, __VA_ARGS__), fprintf(OUT, " (%s:%d)\n", __FILE__, __LINE__)
 #  define LOGV(...) _LOG_(stdout, "V", __VA_ARGS__)
