@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 TARGET_OS=mingw32
 
@@ -12,21 +12,14 @@ cd $BUILD_DIR
     --target-os=$TARGET_OS \
     --prefix="install" \
     --fatal-warnings \
-    --extra-cflags="-O3 -fasm" \
-    --enable-pic \
-    --extra-ldflags="" \
     --enable-gpl \
     --enable-version3 \
     --enable-nonfree \
-    --disable-shared \
-    --disable-debug \
-    --enable-static \
     --disable-programs \
     --disable-doc \
     --disable-avdevice \
     --disable-avfilter \
     --disable-postproc \
-    --disable-avfilter \
     --disable-network \
     --disable-everything \
     --enable-protocol=file \
@@ -62,6 +55,7 @@ cd $BUILD_DIR
     --enable-muxer=h264 \
     --enable-muxer=rawvideo \
     --enable-zlib \
+    --enable-w32threads
 
 #make clean
 #make -j4 install

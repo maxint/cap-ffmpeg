@@ -25,8 +25,8 @@ public:
             /* register a callback function for synchronization */
             //av_lockmgr_register(&LockCallBack);
 
-            //av_log_set_level(AV_LOG_ERROR);
-            av_log_set_level(AV_LOG_DEBUG);
+            av_log_set_level(AV_LOG_ERROR);
+            //av_log_set_level(AV_LOG_DEBUG);
 
             initialized = true;
         }
@@ -610,9 +610,10 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     }
 
     c = st->codec;
-    c->codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
     if (codec_id != CODEC_ID_NONE)
         c->codec_id = codec_id;
+    else
+        c->codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
 
     AVCodec *codec = avcodec_find_encoder(c->codec_id);
     c->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -690,11 +691,11 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
 {
     int ret = 0;
     AVPacket pkt;
-    av_init_packet(&pkt);
 
     if (oc->oformat->flags & AVFMT_RAWPICTURE)
     {
         /* raw video case. The API will change slightly in the near future for that */
+        av_init_packet(&pkt);
         pkt.flags |= AV_PKT_FLAG_KEY;
         pkt.stream_index= video_st->index;
         pkt.data= (uint8_t *)picture;
@@ -712,6 +713,8 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
         pkt.data = NULL;
         pkt.size = 0;
 
+        av_init_packet(&pkt);
+
         /* encode the image */
         ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
         if (ret < 0) LOG_ERR(ret, "avcodec_encode_video2");
@@ -719,18 +722,19 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
         /* if zero size, it means the image was buffered */
         if (ret == 0 && got_packet > 0)
         {
-            if (pkt.pts != AV_NOPTS_VALUE)
+            if (pkt.pts != (int64_t) AV_NOPTS_VALUE)
                 pkt.pts = av_rescale_q(pkt.pts, c->time_base, video_st->time_base);
-            if (pkt.dts != AV_NOPTS_VALUE)
+            if (pkt.dts != (int64_t) AV_NOPTS_VALUE)
                 pkt.dts = av_rescale_q(pkt.dts, c->time_base, video_st->time_base);
             /* write the compressed frame in the media file */
             ret = av_write_frame(oc, &pkt);
-            av_free_packet(&pkt);
         }
         else
         {
             ret = NO_FRAMES_WRITTEN_CODE;
         }
+
+        av_free_packet(&pkt);
     }
 
     return ret;
@@ -866,7 +870,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, int fourcc, double fps,
 
     // Lookup codec_id for given fourcc
     AVCodecID codec_id = oformat->video_codec;
-    if (fourcc != -1)
+    if (fourcc > 0)
     {
 #if 1
         const struct AVCodecTag *tags[] = { avformat_get_riff_video_tags(), 0 };
@@ -874,7 +878,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, int fourcc, double fps,
 #else
         codec_id = av_codec_get_id(oformat->codec_tag, fourcc);
 #endif
-        av_log(NULL, AV_LOG_DEBUG, "get codec (%s/%d) from FOURCC (%08x)\n",
+        av_log(NULL, AV_LOG_DEBUG, "get codec (%s/%d) from FOURCC (0x%08x)\n",
                avcodec_get_name(codec_id), codec_id, fourcc);
     }
     else
@@ -885,7 +889,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, int fourcc, double fps,
 #else
         fourcc = av_codec_get_tag(oformat->codec_tag, codec_id);
 #endif
-        av_log(NULL, AV_LOG_DEBUG, "get FOURCC (%08x) from codec id (%s/%d)\n",
+        av_log(NULL, AV_LOG_DEBUG, "get FOURCC (0x%08x) from codec id (%s/%d)\n",
                fourcc, avcodec_get_name(codec_id), codec_id);
     }
     if (codec_id == AV_CODEC_ID_NONE)
@@ -961,15 +965,14 @@ bool VideoWriter_FFMPEG::open(const char* filename, int fourcc, double fps,
     AVCodec *codec;
     AVCodecContext *c;
 
-    c = (video_st->codec);
+    c = video_st->codec;
     c->codec_tag = fourcc;
 
     /* find the video encoder */
     codec = avcodec_find_encoder(c->codec_id);
     if (!codec)
     {
-        const char* codec_name = avcodec_get_name(c->codec_id);
-        LOGE("Could not find encoder for codec id %s (%d)", codec_name ? codec_name : "[Unknown]", c->codec_id);
+        LOGE("Could not find encoder for codec id %s (%d)", avcodec_get_name(c->codec_id), c->codec_id);
         return false;
     }
 

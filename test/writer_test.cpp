@@ -83,8 +83,8 @@ int main(int argc, char* argv[])
 
     char szDstFileName[MAX_PATH];
 #if 1
-    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.flv", argv[1]);
-    auto writer = ff_writer_create_f(szDstFileName, -1, fps, width, height, pix_fmt);
+    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.mp4", argv[1]);
+    auto writer = ff_writer_create_f(szDstFileName, 0, fps, width, height, pix_fmt);
     //auto writer = ff_writer_create_f(szDstFileName, FFMPEG_FCC('H264'), fps, width, height, pix_fmt);
 #else
     StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.avi", argv[1]);

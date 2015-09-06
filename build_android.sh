@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ######################################################
 # Usage:
@@ -18,39 +18,49 @@
 #       call build_one
 ######################################################
 
-#NDK=~/Desktop/android/android-ndk-r5b
-#NDK=/home/NDK/android-ndk-r5b
-NDK=/home/NDK/android-ndk-r8e
-PLATFORM=$NDK/platforms/android-8/arch-arm
-PREBUILT=$NDK/toolchains/arm-linux-androideabi-4.7/prebuilt/linux-x86
-
-function build_one
-{
 TARGET_OS=android
-BUILD_DIR=$TARGET_OS-build
-rm $BUILD_DIR -rf
+
+BUILD_DIR=build-$TARGET_OS
 mkdir $BUILD_DIR -p
 cd $BUILD_DIR
 
-cd ffmpeg-2.1.1
+#GCC_VER=4.7
+#NDK=/home/NDK/android-ndk-r8e
+#PREBUILT=$NDK/toolchains/arm-linux-androideabi-$GCC_VER/prebuilt/linux-x86
+
+GCC_VER=4.9
+NDK=/e/NDK/android-ndk-r10d
+PREBUILT=$NDK/toolchains/arm-linux-androideabi-$GCC_VER/prebuilt/windows-x86_64
+
+SYSROOT=$NDK/platforms/android-9/arch-arm
+INSTALL_DIR=`pwd`/demo_fwk/jni/ffmpeg2
+SRC_DIR=`pwd`/ffmpeg-2.1.1
+
+CPU=armv7-a
+PREFIX=install/$CPU 
+OPTIMIZE_CFLAGS="-march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8"
+ADDITIONAL_CONFIGURE_FLAG=--enable-neon
+
 ../ffmpeg-source/configure \
-    --target-os=linux \
-    --prefix=$PREFIX \
-    --enable-cross-compile \
-    --extra-libs="-lgcc" \
     --arch=arm \
-    --cc=$PREBUILT/bin/arm-linux-androideabi-gcc \
+    --target-os=linux \
+    --enable-cross-compile \
     --cross-prefix=$PREBUILT/bin/arm-linux-androideabi- \
-    --nm=$PREBUILT/bin/arm-linux-androideabi-nm \
-    --sysroot=$PLATFORM \
-    --extra-cflags=" -O3 -fpic -DANDROID -DHAVE_SYS_UIO_H=1 -Dipv6mr_interface=ipv6mr_ifindex -fasm -Wno-psabi -fno-short-enums -fno-strict-aliasing -finline-limit=300 $OPTIMIZE_CFLAGS " \
-    --disable-shared \
-    --enable-static \
-    --extra-ldflags="-Wl,-rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib  -nostdlib -lc -lm -ldl -llog" \
+    --sysroot=$SYSROOT \
+    --extra-cflags="$OPTIMIZE_CFLAGS" \
+    --extra-libs="-lc -lm -ldl -llog -lgcc" \
+    --prefix=$PREFIX \
+    --fatal-warnings \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-nonfree \
+    --disable-programs \
+    --disable-doc \
+    --disable-avdevice \
+    --disable-avfilter \
+    --disable-postproc \
+    --disable-network \
     --disable-everything \
-    --enable-demuxer=mov \
-    --enable-demuxer=h264 \
-    --disable-ffplay \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \
@@ -59,11 +69,31 @@ cd ffmpeg-2.1.1
     --enable-decoder=h263 \
     --enable-decoder=mpeg4 \
     --enable-decoder=h264 \
+    --enable-encoder=rawvideo \
+    --enable-encoder=mjpeg \
+    --enable-encoder=h263 \
+    --enable-encoder=libx264 \
+    --enable-encoder=mpeg4 \
+    --enable-hwaccel=h263_vaapi \
+    --enable-hwaccel=h263_vdpau \
+    --enable-hwaccel=h264_dxva2 \
+    --enable-hwaccel=h264_vaapi \
+    --enable-hwaccel=h264_vda \
+    --enable-hwaccel=h264_vdpau \
+    --enable-hwaccel=mpeg4_vaapi \
+    --enable-hwaccel=mpeg4_vdpau \
+    --enable-parser=mjpeg \
+    --enable-parser=h263 \
     --enable-parser=h264 \
-    --disable-network \
+    --enable-parser=mpeg4video \
+    --enable-demuxer=mov \
+    --enable-demuxer=h264 \
+    --enable-muxer=mp4 \
+    --enable-muxer=mov \
+    --enable-muxer=ogg \
+    --enable-muxer=h264 \
+    --enable-muxer=rawvideo \
     --enable-zlib \
-    --disable-avfilter \
-    --disable-avdevice \
     $ADDITIONAL_CONFIGURE_FLAG
 
 
@@ -71,44 +101,9 @@ make clean
 make -j4 install
 
 $PREBUILT/bin/arm-linux-androideabi-ar d libavcodec/libavcodec.a inverse.o
-
-$PREBUILT/bin/arm-linux-androideabi-ld -rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib  -soname libffmpeg.so \
-    -shared -nostdlib  -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so \
+$PREBUILT/bin/arm-linux-androideabi-ld --sysroot=$SYSROOT  -soname libffmpeg.so \
+    -shared -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so \
     libavcodec/libavcodec.a libavformat/libavformat.a libavutil/libavutil.a libswscale/libswscale.a \
-    -lc -lm -lz -ldl -llog  --warn-once  --dynamic-linker=/system/bin/linker \
-    $PREBUILT/lib/gcc/arm-linux-androideabi/4.4.3/libgcc.a
+    -lc -lm -lz -ldl -llog $PREBUILT/lib/gcc/arm-linux-androideabi/$GCC_VER/libgcc.a
 
 cd -
-}
-
-PREFIX=android/$CPU 
-
-#arm v6
-#CPU=armv6
-#OPTIMIZE_CFLAGS="-marm -march=$CPU"
-#ADDITIONAL_CONFIGURE_FLAG=
-#build_one
-
-#arm v7vfpv3 (default)
-#CPU=armv7-a
-#OPTIMIZE_CFLAGS="-mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -march=$CPU "
-#ADDITIONAL_CONFIGURE_FLAG=
-#build_one
-
-#arm v7vfp
-#CPU=armv7-a
-#OPTIMIZE_CFLAGS="-mfloat-abi=softfp -mfpu=vfp -marm -march=$CPU "
-#ADDITIONAL_CONFIGURE_FLAG=
-#build_one
-
-#arm v7n
-CPU=armv7-a
-OPTIMIZE_CFLAGS="-mfloat-abi=softfp -mfpu=neon -marm -march=$CPU -mtune=cortex-a8"
-ADDITIONAL_CONFIGURE_FLAG=--enable-neon
-build_one
-
-#arm v6+vfp
-#CPU=armv6
-#OPTIMIZE_CFLAGS="-DCMP_HAVE_VFP -mfloat-abi=softfp -mfpu=vfp -marm -march=$CPU"
-#ADDITIONAL_CONFIGURE_FLAG=
-#build_one
