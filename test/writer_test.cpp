@@ -82,8 +82,28 @@ int main(int argc, char* argv[])
     const auto pix_fmt_name = ff_get_pix_fmt_name_f(pix_fmt);
 
     char szDstFileName[MAX_PATH];
-    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.mp4", argv[1]);
-    auto writer = ff_writer_create_f(szDstFileName, fps, width/2, height/2, pix_fmt);
+#if 1
+    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.flv", argv[1]);
+    auto writer = ff_writer_create_f(szDstFileName, -1, fps, width, height, pix_fmt);
+    //auto writer = ff_writer_create_f(szDstFileName, FFMPEG_FCC('H264'), fps, width, height, pix_fmt);
+#else
+    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.avi", argv[1]);
+    auto writer = ff_writer_create_f(szDstFileName, FFMPEG_FCC('XVID'), fps, width, height, pix_fmt);
+#endif
+
+    if (writer)
+    {
+        const unsigned char* data[4];
+        int step[4];
+        for (int i = 0; i < count; ++i)
+        {
+            printf("writing %d/%d frame\n", i, count);
+            if (ff_cap_grab_f(reader) && ff_cap_retrieve_f(reader, data, step))
+        	    ff_writer_write_f(writer, data[0]);
+            else
+                printf("    no data retrieved\n");
+        }
+    }
 
     ff_writer_release_f(&writer);
     ff_cap_release_f(&reader);

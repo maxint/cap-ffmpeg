@@ -31,7 +31,10 @@ enum {
 
 // FFMPEG_FCC('Y800')
 // http://www.fourcc.org/fourcc.php
-#define FFMPEG_FCC(ch4) ((((ch4) & 0xFF) << 24) | (((ch4) & 0xFF00) << 8) (((ch4) & 0xFF0000) >> 8) | (((ch4) & 0xFF000000) >> 24))
+#define FFMPEG_FCC(ch4) ((((DWORD)(ch4) & 0xFF) << 24)    | \
+                         (((DWORD)(ch4) & 0xFF00) << 8)   | \
+                         (((DWORD)(ch4) & 0xFF0000) >> 8) | \
+                         (((DWORD)(ch4) & 0xFF000000) >> 24))
 
 typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
 typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
@@ -46,7 +49,7 @@ FFMPEG_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char*
 
 
 // Video Writer
-FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, double fps, int width, int height, int src_pix_fmt);
+FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps, int width, int height, int src_pix_fmt);
 FFMPEG_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
 FFMPEG_DLL int  ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
 

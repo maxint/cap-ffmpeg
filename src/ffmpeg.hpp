@@ -47,6 +47,7 @@ private:
     AVCodecContext  * vcodec_ctx;
     AVFrame         * src_frame;
     int64_t           picture_pts;
+    AVPacket          packet;
 
     // target frame
     AVPixelFormat     dst_pix_fmt;
@@ -72,10 +73,7 @@ struct VideoWriter_FFMPEG
     VideoWriter_FFMPEG()  { init(); }
     ~VideoWriter_FFMPEG() { close(); }
 
-    // NOTE: output pixel format is PIX_FMT_YUV420P, and it is good for lossy formats, MPEG, etc.
-    //       If input and output pixel formats are different, input pixel data is converted to
-    //       destination pixel format before write to video stream.
-    bool open(const char* filename, double fps, int width, int height, AVPixelFormat src_pix_fmt);
+    bool open(const char* filename, int fourcc, double fps, int width, int height, AVPixelFormat src_pix_fmt);
     void close();
     bool writeFrame(const uint8_t* data);
 
