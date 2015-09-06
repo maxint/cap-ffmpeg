@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project(ffmpeg_cap_test)
+project(FFMPEG_CAP)
 
-add_executable(${PROJECT_NAME}
+include_directories(../install/inc)
+
+add_executable(player
   WIN32
   resource.h
   Resource.rc
   ffmpeg_cap_test.c)
-target_include_directories(${PROJECT_NAME} PRIVATE ../install/inc)
+
+add_executable(writer_test writer_test.cpp)

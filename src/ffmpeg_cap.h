@@ -46,7 +46,7 @@ FFMPEG_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char*
 
 
 // Video Writer
-FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps, int width, int height, int src_pix_fmt);
+FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, double fps, int width, int height, int src_pix_fmt);
 FFMPEG_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
 FFMPEG_DLL int  ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
 

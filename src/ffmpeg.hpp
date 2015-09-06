@@ -83,7 +83,7 @@ private:
     void init();
     void destroy();
 
-    AVOutputFormat  * out_fmt;
+    AVOutputFormat  * oformat;
     AVFormatContext * format_ctx;
     AVFrame         * picture;
     uint8_t         * picbuf;

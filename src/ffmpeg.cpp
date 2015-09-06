@@ -45,7 +45,7 @@ static double r2d(AVRational r) {
     return r.num == 0 || r.den == 0 ? 0. : (double)r.num / (double)r.den;
 }
 
-#define PRINT_IF_ERR(err) { if (err != 0) LOGE("AVERROR: %s, %d in %s", err2str(err), __LINE__, __FILE__); }
+#define LOG_ERR(err) { if (err != 0) LOGE("AVERROR: %s", err2str(err)); }
 
 void VideoCapture_FFMPEG::init()
 {
@@ -139,14 +139,14 @@ bool VideoCapture_FFMPEG::open(const char* fname)
     if (err < 0)
     {
         LOGE("Error opening file %s", fname);
-        PRINT_IF_ERR(err);
+        LOG_ERR(err);
         return false;
     }
     err = avformat_find_stream_info(format_ctx, NULL);
     if (err < 0)
     {
         LOGE("Could not find codec parameters");
-        PRINT_IF_ERR(err);
+        LOG_ERR(err);
         return false;
     }
     // Dump information about file onto standard error
@@ -554,6 +554,13 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
     return true;
 }
 
+// AVFormatContext (s)
+//  - AVStream (st)
+//      - AVCodecContext (codec)
+//          - codec_tag?
+//          - codec_id?
+//  - AVOutputFormat (of)
+
 /* add a video output stream to the container */
 static AVStream *add_video_stream(AVFormatContext *oc,
                                   int w, int h, int bitrate,
@@ -578,6 +585,8 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     // get the codec tag for the given codec id.
     const struct AVCodecTag *tags[] = { avformat_get_riff_video_tags(), 0 };
     c->codec_tag = av_codec_get_tag(tags, c->codec_id);
+
+    LOGD("Tag: %08x, codec id '%d'", c->codec_tag, c->codec_id);
 
     /* put sample parameters */
     int64_t lbit_rate = (int64_t)bitrate;
@@ -682,7 +691,7 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
 
 void VideoWriter_FFMPEG::init()
 {
-    out_fmt = 0;
+    oformat = 0;
     format_ctx = NULL;
     picture = NULL;
     picbuf = NULL;
@@ -740,7 +749,7 @@ void VideoWriter_FFMPEG::destroy()
         av_freep(&format_ctx->streams[i]);
     }
 
-    if (!(out_fmt->flags & AVFMT_NOFILE)) {
+    if (!(oformat->flags & AVFMT_NOFILE)) {
         /* close the output file */
         avio_close(format_ctx->pb);
     }
@@ -780,10 +789,14 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
     }
 
     /* auto detect the output format from file name and fourcc code. */
-    out_fmt = av_guess_format(NULL, filename, NULL);
-    if (!out_fmt) {
+    oformat = av_guess_format(NULL, filename, NULL);
+    if (!oformat) {
         LOGW("Could not deduce output format from file extension (%s): using MPEG.", filename);
-        out_fmt = av_guess_format("mpeg", NULL, NULL);
+        oformat = av_guess_format("mpeg", NULL, NULL);
+        if (!oformat) {
+            LOGE("Could not deduce output format with short name (mpeg)");
+            return false;
+        }
     }
 
     // alloc memory for context
@@ -794,7 +807,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
     }
 
     /* set file name */
-    format_ctx->oformat = out_fmt;
+    format_ctx->oformat = oformat;
     snprintf(format_ctx->filename, sizeof(format_ctx->filename), "%s", filename);
 
     /* set some options */
@@ -808,7 +821,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
 
     // TODO -- safe to ignore output audio stream?
     video_st = add_video_stream(format_ctx, width, height, (int)(bitrate + 0.5), fps, codec_pix_fmt);
-
+    
     /* set the output parameters (must be done even if no parameters). */
 #if 0
     av_dump_format(oc, 0, filename, 1);
@@ -843,7 +856,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
     /* open the codec */
     if ((err = avcodec_open2(c, codec, NULL)) < 0) {
         LOGE("Could not open codec '%s'", codec->name);
-        PRINT_IF_ERR(err);
+        LOG_ERR(err);
         return false;
     }
 
@@ -866,8 +879,9 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
     }
 
     /* open the output file, if needed */
-    if (!(out_fmt->flags & AVFMT_NOFILE)) {
+    if (!(oformat->flags & AVFMT_NOFILE)) {
         if (avio_open(&format_ctx->pb, filename, AVIO_FLAG_WRITE) < 0) {
+            LOGE("Failed to open output video file");
             return false;
         }
     }
@@ -877,6 +891,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, double fps, int width, int h
     if (err < 0) {
         close();
         remove(filename);
+        LOGE("Failed to write video header");
         return false;
     }
     frame_width = width;
@@ -920,7 +935,7 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
     }
 
     int ret = write_frame(format_ctx, video_st, picture);
-    PRINT_IF_ERR(ret);
+    LOG_ERR(ret);
 
     return ret >= 0;
 }

@@ -31,12 +31,12 @@ DLLOUT:= $(MNAME).dll
 DEFOUT:= $(MNAME).def
 OBJS:= $(SRCS:%.cpp=%.o)
 
-all: clean $(DLLOUT) install
+all: $(DLLOUT)
 
 clean:
 	@$(RM) *.o *.dll *.lib *.def *.exp
 
-install:
+install: $(DLLOUT)
 	$(MKDIR) $(PREFIX)/{,inc,bin}
 	$(CP) $(HEADERS) $(PREFIX)/inc
 	$(MV) $(DLLOUT) $(PREFIX)/bin

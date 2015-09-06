@@ -14,12 +14,12 @@
 #  define LOGW(...) __android_log_print(ANDROID_LOG_WARN,   LOG_TAG, ##__VA_ARGS__)
 #  define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,  LOG_TAG, ##__VA_ARGS__)
 #else
-#  define _LOG_(OUT, L, ...) fprintf(OUT, "%s/%s: ", LOG_TAG, L), fprintf(OUT, __VA_ARGS__), fprintf(OUT, " (%s:%d)\n", __FILE__, __LINE__)
-#  define LOGV(...) _LOG_(stdout, "V", __VA_ARGS__)
-#  define LOGD(...) _LOG_(stdout, "D", __VA_ARGS__)
-#  define LOGI(...) _LOG_(stdout, "I", __VA_ARGS__)
-#  define LOGW(...) _LOG_(stderr, "W", __VA_ARGS__)
-#  define LOGE(...) _LOG_(stderr, "E", __VA_ARGS__)
+#  define _LOG_(OUT, L, fmt, ...) fprintf(OUT, "%s/%s: " fmt ", in %s (%d)\n", LOG_TAG, L, ##__VA_ARGS__, __FILE__, __LINE__)
+#  define LOGV(fmt, ...) _LOG_(stdout, "V", fmt, ##__VA_ARGS__)
+#  define LOGD(fmt, ...) _LOG_(stdout, "D", fmt, ##__VA_ARGS__)
+#  define LOGI(fmt, ...) _LOG_(stdout, "I", fmt, ##__VA_ARGS__)
+#  define LOGW(fmt, ...) _LOG_(stderr, "W", fmt, ##__VA_ARGS__)
+#  define LOGE(fmt, ...) _LOG_(stderr, "E", fmt, ##__VA_ARGS__)
 #endif
 
 #ifndef NO_FUNC_LOG
