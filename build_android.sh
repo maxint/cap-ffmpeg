@@ -6,15 +6,15 @@
 #   ./build_android
 #
 # It generates binary for following architectures:
-#     ARMv6 
-#     ARMv6+VFP 
-#     ARMv7+VFPv3-d16 (Tegra2) 
+#     ARMv6
+#     ARMv6+VFP
+#     ARMv7+VFPv3-d16 (Tegra2)
 #     ARMv7+Neon (Cortex-A8)
 #
 # Customizing:
 # 1. Feel free to change ./configure parameters for more features
 # 2. To adapt other ARM variants
-#       set $CPU and $OPTIMIZE_CFLAGS 
+#       set $CPU and $OPTIMIZE_CFLAGS
 #       call build_one
 ######################################################
 
@@ -37,7 +37,7 @@ INSTALL_DIR=`pwd`/demo_fwk/jni/ffmpeg2
 SRC_DIR=`pwd`/ffmpeg-2.1.1
 
 CPU=armv7-a
-PREFIX=install/$CPU 
+PREFIX=install/$CPU
 OPTIMIZE_CFLAGS="-march=$CPU -mfloat-abi=softfp -mfpu=neon -mtune=cortex-a8"
 ADDITIONAL_CONFIGURE_FLAG=--enable-neon
 
@@ -51,9 +51,6 @@ ADDITIONAL_CONFIGURE_FLAG=--enable-neon
     --extra-libs="-lc -lm -ldl -llog -lgcc" \
     --prefix=$PREFIX \
     --fatal-warnings \
-    --enable-gpl \
-    --enable-version3 \
-    --enable-nonfree \
     --disable-programs \
     --disable-doc \
     --disable-avdevice \
@@ -61,6 +58,9 @@ ADDITIONAL_CONFIGURE_FLAG=--enable-neon
     --disable-postproc \
     --disable-network \
     --disable-everything \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-nonfree \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \

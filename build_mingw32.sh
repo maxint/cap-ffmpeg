@@ -12,9 +12,6 @@ cd $BUILD_DIR
     --target-os=$TARGET_OS \
     --prefix="install" \
     --fatal-warnings \
-    --enable-gpl \
-    --enable-version3 \
-    --enable-nonfree \
     --disable-programs \
     --disable-doc \
     --disable-avdevice \
@@ -22,6 +19,9 @@ cd $BUILD_DIR
     --disable-postproc \
     --disable-network \
     --disable-everything \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-nonfree \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \
