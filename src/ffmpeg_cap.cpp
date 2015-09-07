@@ -49,7 +49,7 @@ int ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int 
 
 //////////////////////////////////////////////////////////////////////////
 
-VideoWriter_FFMPEG* ff_writer_create(const char* fname, int fourcc, double fps, int width, int height, int src_pix_fmt)
+VideoWriter_FFMPEG* ff_writer_create(const char* fname, unsigned int fourcc, double fps, int width, int height, int src_pix_fmt)
 {
     VideoWriter_FFMPEG *writer = new VideoWriter_FFMPEG();
     if (writer->open(fname, fourcc, fps, width, height, (AVPixelFormat) src_pix_fmt))

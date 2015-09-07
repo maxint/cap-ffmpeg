@@ -73,7 +73,7 @@ struct VideoWriter_FFMPEG
     VideoWriter_FFMPEG()  { init(); }
     ~VideoWriter_FFMPEG() { close(); }
 
-    bool open(const char* filename, int fourcc, double fps, int width, int height, AVPixelFormat src_pix_fmt);
+    bool open(const char* filename, unsigned fourcc, double fps, int width, int height, AVPixelFormat src_pix_fmt);
     void close();
     bool writeFrame(const uint8_t* data);
 

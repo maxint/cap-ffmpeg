@@ -25,8 +25,11 @@ public:
             /* register a callback function for synchronization */
             //av_lockmgr_register(&LockCallBack);
 
+#if 1
             av_log_set_level(AV_LOG_ERROR);
-            //av_log_set_level(AV_LOG_DEBUG);
+#else
+            av_log_set_level(AV_LOG_DEBUG);
+#endif
 
             initialized = true;
         }
@@ -827,7 +830,7 @@ void VideoWriter_FFMPEG::close()
 }
 
 /// Create a video writer object that uses FFMPEG
-bool VideoWriter_FFMPEG::open(const char* filename, int fourcc, double fps,
+bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
                               int width, int height, AVPixelFormat src_pix_fmt)
 {
     int err;
