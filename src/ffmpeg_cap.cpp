@@ -90,7 +90,6 @@ const char* ff_get_pix_fmt_name(int pix_fmt)
 
 //////////////////////////////////////////////////////////////////////////
 
-/*
 struct SwsContext_FFMPEG
 {
     SwsContext_FFMPEG() {
@@ -112,18 +111,20 @@ struct SwsContext_FFMPEG
         int flags)
     {
         need_cvt = srcW != dstW || srcH != dstH || srcFmt != dstFmt;
-        if (need_cvt) {
+        if (need_cvt)
+        {
             img_convert_ctx = sws_getCachedContext(
                 img_convert_ctx,
-                srcW, srcH, srcFmt,
-                dstW, dstH, dstFmt,
+                srcW, srcH, (AVPixelFormat) srcFmt,
+                dstW, dstH, (AVPixelFormat) dstFmt,
                 flags,
                 NULL, NULL, NULL
                 );
             if (!img_convert_ctx)
                 return false;
-            if (dst_picture.data[0]) avpicture_free(&dst_picture);
-            if (avpicture_alloc(&dst_picture, dstFmt, dstW, dstH) != 0)
+            if (dst_picture.data[0])
+                avpicture_free(&dst_picture);
+            if (avpicture_alloc(&dst_picture, (AVPixelFormat) dstFmt, dstW, dstH) != 0)
                 return false;
         }
         dst_width = dstW;
@@ -142,7 +143,8 @@ struct SwsContext_FFMPEG
         if (!img_convert_ctx)
             return -1;
 
-        if (need_cvt) {
+        if (need_cvt)
+        {
             int goth = sws_scale(
                 img_convert_ctx,
                 src, srcStride,
@@ -157,7 +159,9 @@ struct SwsContext_FFMPEG
             if (dstStride)
                 memcpy(dstStride, dst_picture.linesize, sizeof(int) * 4);
             return goth;
-        } else {
+        }
+        else
+        {
             memcpy(dst, src, sizeof(uint8_t*) * 4);
             if (dstStride)
                 memcpy(dstStride, srcStride, sizeof(int) * 4);
@@ -189,7 +193,8 @@ SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
 
 void ff_sws_freeContext(SwsContext_FFMPEG** ctx)
 {
-    if (ctx && *ctx) {
+    if (ctx && *ctx)
+    {
         delete *ctx;
         *ctx = NULL;
     }
@@ -201,4 +206,3 @@ int ff_sws_scale(SwsContext_FFMPEG* ctx,
 {
     return ctx->scale(src, srcStride, dst, dstStride);
 }
-*/

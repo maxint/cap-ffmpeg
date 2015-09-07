@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////
+// Video Reader
+
 enum {
     // read-write properties
     FFMPEG_PROP_FRAME_WIDTH=0,
@@ -29,6 +33,34 @@ enum {
     FFMPEG_PROP_BUFFER_SIZE=15,
 };
 
+typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
+
+// @brief Create video reader.
+FFMPEG_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
+
+// @brief Release video reader.
+FFMPEG_DLL void   ff_cap_release(VideoCapture_FFMPEG** cap);
+
+// @brief Get property of video reader.
+FFMPEG_DLL double ff_cap_get(VideoCapture_FFMPEG* cap, int propid);
+
+// @brief Set property of video reader.
+FFMPEG_DLL int    ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val);
+
+// @brief Grab one frame from video stream.
+FFMPEG_DLL int    ff_cap_grab(VideoCapture_FFMPEG* cap);
+
+// @brief Retrieve and/or convert the grabbed video frame.
+// @param data image planes.
+// @param data width bytes of image planes.
+FFMPEG_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
+
+
+//////////////////////////////////////////////////////////////////////////
+// Video Writer
+
+typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
+
 // FFMPEG_FCC('Y800')
 // http://www.fourcc.org/fourcc.php
 #define FFMPEG_FCC(ch4) ((((unsigned int)(ch4) & 0xFF) << 24)    | \
@@ -36,36 +68,38 @@ enum {
                          (((unsigned int)(ch4) & 0xFF0000) >> 8) | \
                          (((unsigned int)(ch4) & 0xFF000000) >> 24))
 
-typedef struct VideoCapture_FFMPEG VideoCapture_FFMPEG;
-typedef struct VideoWriter_FFMPEG VideoWriter_FFMPEG;
-
-// Video Capture
-FFMPEG_DLL VideoCapture_FFMPEG* ff_cap_create(const char* fname);
-FFMPEG_DLL void   ff_cap_release(VideoCapture_FFMPEG** cap);
-FFMPEG_DLL double ff_cap_get(VideoCapture_FFMPEG* cap, int propid);
-FFMPEG_DLL int    ff_cap_set(VideoCapture_FFMPEG* cap, int propid, double val);
-FFMPEG_DLL int    ff_cap_grab(VideoCapture_FFMPEG* cap);
-FFMPEG_DLL int    ff_cap_retrieve(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
-
-
-// Video Writer
+// @brief Create video writer.
+// @param fourcc video encoder codec, created by FFMPEG_FCC(). Guess from file name if 0.
+// @param src_pix_fmt input data pixel format, the same as data passed in ff_writer_write().
 FFMPEG_DLL VideoWriter_FFMPEG* ff_writer_create(const char* fname, unsigned int fourcc, double fps, int width, int height, int src_pix_fmt);
+
+// @brief Release video writer.
 FFMPEG_DLL void ff_writer_release(VideoWriter_FFMPEG** writer);
+
+// @brief Write one frame.
+// @param data frame data
 FFMPEG_DLL int  ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data);
 
 
-// Return the size in bytes of the amount of data required to store an image with the given parameters.
+//////////////////////////////////////////////////////////////////////////
+// Utilities for pixel format
+
+// @brief Return the size in bytes of the amount of data required to store an image with the given parameters.
 // @see av_image_get_buffer_size(), avpicture_get_size()
 FFMPEG_DLL int  ff_get_buffer_size(int pix_fmt, int width, int height);
 
-// Return the pixel format corresponding to name. Return -1 if no pixel format has been found.
+// @brief Return the pixel format corresponding to name. Return -1 if no pixel format has been found.
 // @param name "gray16", "nv21"
 // @see av_get_pix_fmt()
 FFMPEG_DLL int  ff_get_pix_fmt(const char *name);
 
-// Return the short name for a pixel format, NULL in case pix_fmt is unknown.
+// @brief Return the short name for a pixel format, NULL in case pix_fmt is unknown.
 // @see av_get_pix_fmt_name()
 FFMPEG_DLL const char* ff_get_pix_fmt_name(int pix_fmt);
+
+
+//////////////////////////////////////////////////////////////////////////
+// Convert and scale between pixel formats.
 
 // swcale
 enum {

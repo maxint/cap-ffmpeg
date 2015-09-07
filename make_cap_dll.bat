@@ -1,7 +1,7 @@
 @echo off
-set PREFIX=D:\mingw\msys\1.0\bin
-set PATH=%PREFIX%;%PATH%
-bash -c "cd src && make clean && make -j4 install && cd -"
+set MSYS_BIN_DIR=D:\mingw\msys\1.0\bin
+set PATH=%MSYS_BIN_DIR%;%PATH%
+bash -c "cd src && make clean && make install && cd -"
 mkdir build-test\Debug
 mkdir build-test\Release
 copy install\bin\ffmpeg_cap.dll build-test\Debug\
