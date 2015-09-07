@@ -1,6 +1,12 @@
 @echo off
-set MINGW_ROOT=D:\mingw
-set PATH=%MINGW_ROOT%\bin;%MINGW_ROOT%\msys\1.0\bin;%MINGW_ROOT%\msys\1.0\opt\bin;%PATH%
-%MINGW_ROOT%\msys\1.0\bin\bash.exe -c "bash build_mingw32.sh"
-%MINGW_ROOT%\msys\1.0\bin\bash.exe -c "cd build-mingw32 && make clean && make -j4 install && cd install/lib strip -g *.a && cd - cd .."
+set PREFIX=D:\mingw\msys\1.0\bin
+set PATH=%PREFIX%;%PATH%
+REM bash build_mingw32.sh
+pushd build-mingw32
+REM make clean
+REM make -j4 install
+make install
+echo "Striping static libraries..."
+bash -c "cd install/lib && strip -g *.a"
+popd
 pause
