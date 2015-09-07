@@ -1,4 +1,4 @@
-FFMPEG C wrapper for reading and writing of video file.
+Simple FFMPEG C wrapper for reading and writing of video files.
 The FFMPEG source code and this C wrapper is built by MinGW.
 The main code is from [OpenCV](http://www.opencv.org) and [ffmpeg tutorial by Stephen Dranger](http://dranger.com/ffmpeg/).
 
