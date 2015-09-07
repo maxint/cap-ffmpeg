@@ -8,6 +8,6 @@ add_executable(player
   WIN32
   resource.h
   Resource.rc
-  ffmpeg_cap_test.c)
+  player.c)
 
 add_executable(writer_test writer_test.cpp)
