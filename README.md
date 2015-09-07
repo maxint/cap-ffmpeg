@@ -11,7 +11,7 @@ Install
 
 - `make_ffmpeg.bat`: Build ffmpeg in MinGW.
 - `make_cap_dll.bat`: Build `ffmpeg_cap` C wrapper in MinGW.
-- `make_test_vs_project.bat`: Generate test Visual Studio project from
+- `make_test_vs_project.bat`: Generate Visual Studio test project from
   `test/CMakeLists.txt`.
 
 
