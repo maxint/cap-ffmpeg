@@ -97,13 +97,13 @@ ADDITIONAL_CONFIGURE_FLAG=--enable-neon
     $ADDITIONAL_CONFIGURE_FLAG
 
 
-make clean
-make -j4 install
+#make clean
+#make -j4 install
 
-$PREBUILT/bin/arm-linux-androideabi-ar d libavcodec/libavcodec.a inverse.o
-$PREBUILT/bin/arm-linux-androideabi-ld --sysroot=$SYSROOT  -soname libffmpeg.so \
-    -shared -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so \
-    libavcodec/libavcodec.a libavformat/libavformat.a libavutil/libavutil.a libswscale/libswscale.a \
-    -lc -lm -lz -ldl -llog $PREBUILT/lib/gcc/arm-linux-androideabi/$GCC_VER/libgcc.a
+#$PREBUILT/bin/arm-linux-androideabi-ar d libavcodec/libavcodec.a inverse.o
+#$PREBUILT/bin/arm-linux-androideabi-ld --sysroot=$SYSROOT  -soname libffmpeg.so \
+    #-shared -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so \
+    #libavcodec/libavcodec.a libavformat/libavformat.a libavutil/libavutil.a libswscale/libswscale.a \
+    #-lc -lm -lz -ldl -llog $PREBUILT/lib/gcc/arm-linux-androideabi/$GCC_VER/libgcc.a
 
 cd -

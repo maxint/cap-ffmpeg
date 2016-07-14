@@ -1,8 +1,14 @@
 #ifndef __FFMPEG_H__
 #define __FFMPEG_H__
 
-#ifdef FFMPEG_EXPORTS
-#   define FFMPEG_DLL __declspec(dllexport)
+#if defined(FFMPEG_EXPORTS)
+#   if defined(_WINDOWS) || defined(__CYGWIN__)
+#       define FFMPEG_DLL __declspec(dllexport)
+#   elif defined(__GNUC__) && __GNUC__ >= 4
+#       define FFMPEG_DLL __attribute__ ((visibility ("default")))
+#   else
+#       define FFMPEG_DLL
+#   endif
 #else
 #   define FFMPEG_DLL
 #endif

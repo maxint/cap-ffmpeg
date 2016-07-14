@@ -1,16 +1,16 @@
 ### Compiler
 
-CC		=gcc
-CXX		=g++
+CC		= gcc
+CXX		= g++
 
-CFLAGS  =		-O3 -Wall
+CFLAGS  = -O3 -Wall
 CPPFLAGS=
-LDFLAGS	=	-shared -Wl,--no-undefined -static-libgcc -static-libstdc++ -static -lpthread
+LDFLAGS	= -shared -Wl,--no-undefined -static-libgcc -static-libstdc++ -static -lpthread
 
-CP		=cp -p
-RM		=rm -rf
-MV		=mv
-MKDIR	=mkdir -p
+CP		= cp -p
+RM		= rm -rf
+MV		= mv
+MKDIR	= mkdir -p
 
 ### Project
 
