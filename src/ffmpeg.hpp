@@ -6,6 +6,7 @@ extern "C" {
     #include <libavcodec/avcodec.h>
     #include <libswscale/swscale.h>
 } // extern "C"
+
 #include "common/thread.hpp"
 #include "common/utils.hpp"
 #include "ffmpeg_cap.h"

@@ -165,7 +165,7 @@ bool VideoCapture_FFMPEG::open(const char* fname)
     av_dump_format(format_ctx, 0, fname, 0);
     for (unsigned i = 0; i < format_ctx->nb_streams; i++)
     {
-    	AVCodecContext *codec_ctx = format_ctx->streams[i]->codec;
+        AVCodecContext *codec_ctx = format_ctx->streams[i]->codec;
         // Note: number of detected logical cores by default.
         // codec_ctx->thread_count = av_cpu_count();
 
@@ -185,9 +185,9 @@ bool VideoCapture_FFMPEG::open(const char* fname)
 
             // checking width/height (since decoder can sometimes alter it, eg. vp6f)
             if (enc_width && (codec_ctx->width != enc_width))
-            	codec_ctx->width = enc_width;
+                codec_ctx->width = enc_width;
             if (enc_height && (codec_ctx->height != enc_height))
-            	codec_ctx->height = enc_height;
+                codec_ctx->height = enc_height;
 
             video_stream = i;
             video_st = format_ctx->streams[i];
@@ -299,7 +299,7 @@ bool VideoCapture_FFMPEG::retrieveFrame(const uint8_t* data[4], int step[4])
     {
         if (!dst_frame->data[0])
         {
-            // create conversion context 
+            // create conversion context
             img_convert_ctx = sws_getCachedContext(
                 img_convert_ctx,
                 vcodec_ctx->width,
@@ -341,11 +341,11 @@ bool VideoCapture_FFMPEG::retrieveFrame(const uint8_t* data[4], int step[4])
 
 const uint8_t* VideoCapture_FFMPEG::retrieveFrame()
 {
-	const uint8_t* data[4];
-	if (retrieveFrame(data, NULL))
-		return data[0];
-	else
-		return NULL;
+    const uint8_t* data[4];
+    if (retrieveFrame(data, NULL))
+        return data[0];
+    else
+        return NULL;
 }
 
 double VideoCapture_FFMPEG::getProperty(int property_id)
@@ -377,7 +377,7 @@ double VideoCapture_FFMPEG::getProperty(int property_id)
     case FFMPEG_PROP_PIXEL_FORMAT:
         return (int) dst_pix_fmt;
     case FFMPEG_PROP_BUFFER_SIZE:
-    	return buf_size;
+        return buf_size;
     default:
         break;
     }
@@ -952,7 +952,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
 
     // TODO -- safe to ignore output audio stream?
     video_st = add_video_stream(format_ctx, codec_id, width, height, (int)(bitrate + 0.5), fps, codec_pix_fmt);
-    
+
 #if 0 // for debug
     av_dump_format(format_ctx, 0, filename, 1);
 #endif

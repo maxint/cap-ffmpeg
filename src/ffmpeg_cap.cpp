@@ -13,7 +13,7 @@ VideoCapture_FFMPEG* ff_cap_create(const char* fname)
     VideoCapture_FFMPEG *cap = new VideoCapture_FFMPEG();
     if (cap->open(fname))
         return cap;
-    
+
     // clean up
     delete cap;
     return NULL;
@@ -134,7 +134,7 @@ struct SwsContext_FFMPEG
     }
 
     int scale(
-        const uint8_t *const src[4], const int srcStride[4], 
+        const uint8_t *const src[4], const int srcStride[4],
         uint8_t* dst[4], int dstStride[4]=NULL)
     {
         if (!dst && !dstStride)

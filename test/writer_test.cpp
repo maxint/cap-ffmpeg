@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
         {
             printf("writing %d/%d frame\n", i, count);
             if (ff_cap_grab_f(reader) && ff_cap_retrieve_f(reader, data, step))
-        	    ff_writer_write_f(writer, data[0]);
+                ff_writer_write_f(writer, data[0]);
             else
                 printf("    no data retrieved\n");
         }

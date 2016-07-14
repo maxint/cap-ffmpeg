@@ -12,6 +12,11 @@ RM		= rm -rf
 MV		= mv
 MKDIR	= mkdir -p
 
+# hidden
+CFLAGS  += -fvisibility=hidden -fdata-sections -ffunction-sections
+CPPFLAGS+= -fvisibility-inlines-hidden
+LDFLAGS += -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,--as-needed -Wl,--strip-all
+
 ### Project
 
 MNAME	= ffmpeg_cap
@@ -19,7 +24,8 @@ HEADERS	= ffmpeg_cap.h
 SRCS	= ffmpeg.cpp ffmpeg_cap.cpp
 INCS	= -I../build-mingw32/install/include
 LIBS	= -L../build-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -liconv
-CPPFLAGS+= -D__STDC_CONSTANT_MACROS -DFFMPEG_EXPORTS
+CFLAGS 	+= -DFFMPEG_EXPORTS
+CPPFLAGS+= -D__STDC_CONSTANT_MACROS
 LDFLAGS += -Wl,--output-def=$(DEFOUT)
 ifndef PREFIX
 	PREFIX= ../install
@@ -27,9 +33,9 @@ endif
 
 #### Build
 
-DLLOUT:= $(MNAME).dll
-DEFOUT:= $(MNAME).def
-OBJS:= $(SRCS:%.cpp=%.o)
+DLLOUT	:= $(MNAME).dll
+DEFOUT	:= $(MNAME).def
+OBJS	:= $(SRCS:%.cpp=%.o)
 
 all: $(DLLOUT)
 
@@ -49,6 +55,6 @@ install: $(DLLOUT)
 
 $(DLLOUT): $(OBJS)
 	@echo CXX	$@
-	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CXX) ${CFLAGS} ${CPPFLAGS} $(LDFLAGS) $^ $(LIBS) -o $@
 
 $(DEFOUT): $(DLLOUT)
