@@ -1,14 +1,15 @@
 #ifndef __FFMPEG_TK_HPP__
 #define __FFMPEG_TK_HPP__
 
+// Current used ffmpeg version: 2.8
 extern "C" {
     #include <libavformat/avformat.h>
     #include <libavcodec/avcodec.h>
     #include <libswscale/swscale.h>
 } // extern "C"
 
-#include "common/thread.hpp"
-#include "common/utils.hpp"
+#include <common/thread.hpp>
+#include <common/utils.hpp>
 #include "ffmpeg_cap.h"
 
 struct VideoCapture_FFMPEG
@@ -58,6 +59,7 @@ private:
     int				  buf_size;
 
     int64_t           frame_number;
+    int64_t           frame_count;
     int64_t           first_frame_number;
 
 /*
@@ -84,7 +86,7 @@ private:
 
     AVOutputFormat  * oformat;
     AVFormatContext * format_ctx;
-    AVFrame         * picture;
+    AVFrame         * dst_picture;
     uint8_t         * picbuf;
     AVStream        * video_st;
 

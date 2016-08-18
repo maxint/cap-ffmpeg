@@ -3,7 +3,7 @@
 CC		= gcc
 CXX		= g++
 
-CFLAGS  = -O3 -Wall
+CFLAGS  = -O3 -Wall -I.
 CPPFLAGS=
 LDFLAGS	= -shared -Wl,--no-undefined -static-libgcc -static-libstdc++ -static -lpthread
 

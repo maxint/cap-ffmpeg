@@ -2,6 +2,7 @@
 #define __JNI_UTILS_H__
 
 #include <time.h>
+#include <stdint.h>
 
 #define	SAFE_MEM_FREE(MEM)		if (MEM) {free(MEM); MEM = NULL;}
 #define	SAFE_MEM_DEL(MEM)		if (MEM) {delete MEM; MEM = NULL;}

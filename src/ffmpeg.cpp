@@ -1,14 +1,50 @@
 #include "ffmpeg.hpp"
 
+#define DUMP_DEBUG_INFO 0
 #define NO_FUNC_LOG
 #define LOG_TAG "ffmpeg"
-#include "common/log.hpp"
+#include <common/log.hpp>
 
 #include <math.h>       /* floor */
 
 extern "C" {
 #   include <libavutil/imgutils.h>
 } // extern "C"
+
+static inline void dump_all_iformat()
+{
+    LOGD("All input formats:");
+    AVInputFormat *fmt = NULL;
+    LOGD("- Name | Long Name | Extensions");
+    while ((fmt = av_iformat_next(fmt))) {
+        LOGD("- %s | %s | %s", fmt->name, fmt->long_name, fmt->extensions);
+    }
+}
+
+static inline void dump_all_oformat()
+{
+    LOGD("All output formats:");
+    AVOutputFormat *fmt = NULL;
+    LOGD("- Name | Long Name | Mime-Type | Extensions");
+    while ((fmt = av_oformat_next(fmt))) {
+        LOGD("- %s | %s | %s | %s", fmt->name, fmt->long_name, fmt->mime_type, fmt->extensions);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// NOTE: for bug in ffmpeg-2.1.1:
+// auto detect the output format from file name and fourcc code.
+// e.g.
+//      oformat = av_guess_format(NULL, filename, NULL);
+//////////////////////////////////////////////////////////////////////////
+//static AVOutputFormat* find_mp4_format() {
+//    AVOutputFormat *fmt = NULL;
+//    while ((fmt = av_oformat_next(fmt))) {
+//      if (strcmp(fmt->extensions, "mp4") == 0)
+//        return fmt;
+//    }
+//    return NULL;
+//}
 
 class InternalFFMpegRegister
 {
@@ -17,7 +53,15 @@ public:
     {
         if (!initialized)
         {
-            //avformat_network_init();
+#if DUMP_DEBUG_INFO
+            LOGI("FFMPEG version: %d", avformat_version());
+            LOGI("FFMPEG configuration: %s", avformat_configuration());
+            av_log_set_level(AV_LOG_DEBUG);
+#else
+            av_log_set_level(AV_LOG_ERROR);
+#endif
+
+            avformat_network_init();
 
             /* register all codecs, demux and protocols */
             av_register_all();
@@ -25,19 +69,21 @@ public:
             /* register a callback function for synchronization */
             //av_lockmgr_register(&LockCallBack);
 
-#if 1
-            av_log_set_level(AV_LOG_ERROR);
-#else
-            av_log_set_level(AV_LOG_DEBUG);
-#endif
+            // NOTE: dump debug information
+#if DUMP_DEBUG_INFO
+            dump_all_iformat();
+            dump_all_oformat();
+#endif // DUMP_DEBUG_INFO
 
             initialized = true;
         }
     }
     ~InternalFFMpegRegister()
     {
-        initialized = false;
+        avformat_network_deinit();
         //av_lockmgr_register(NULL);
+
+        initialized = false;
     }
     static bool initialized;
 };
@@ -54,12 +100,14 @@ static inline const char* err2str(int err)
     av_strerror(err, msg, MSG_SZ);
     return msg;
 }
+
 static inline double r2d(AVRational r)
 {
-    return r.num == 0 || r.den == 0 ? 0. : (double)r.num / (double)r.den;
+    return r.num == 0 || r.den == 0 ? 0. : (double) r.num / (double) r.den;
 }
 
-#define LOG_ERR(err, fmt, ...) LOGE(fmt ", AVERROR: %s", ##__VA_ARGS__, err2str(err))
+#define LOG_ERR(fmt, ...) LOGE(fmt ", %s (%d)", ##__VA_ARGS__, __FILE__, __LINE__)
+#define LOG_ERR_R(err, fmt, ...) LOG_ERR(fmt ", AVERROR: %s", ##__VA_ARGS__, err2str(err))
 
 void VideoCapture_FFMPEG::init()
 {
@@ -74,7 +122,7 @@ void VideoCapture_FFMPEG::init()
     memset(&packet, 0, sizeof(packet));
     av_init_packet(&packet);
 
-    dst_pix_fmt = AV_PIX_FMT_BGR24;
+    dst_pix_fmt = AV_PIX_FMT_NV21;
     dst_width = dst_height = 0;
     dst_frame = NULL;
 
@@ -82,6 +130,7 @@ void VideoCapture_FFMPEG::init()
 
     first_frame_number = -1;
     frame_number = 0;
+    frame_count = 0;
     picture_pts = AV_NOPTS_VALUE;
 
     filename = 0;
@@ -101,7 +150,7 @@ void VideoCapture_FFMPEG::destory()
 
     if (src_frame)
     {
-        avcodec_free_frame(&src_frame);
+        av_frame_free(&src_frame);
         src_frame = NULL;
     }
 
@@ -109,7 +158,7 @@ void VideoCapture_FFMPEG::destory()
     {
         if (dst_frame->data[0])
             avpicture_free((AVPicture *)dst_frame);
-        avcodec_free_frame(&dst_frame);
+        av_frame_free(&dst_frame);
         dst_frame = NULL;
     }
 
@@ -152,17 +201,19 @@ bool VideoCapture_FFMPEG::open(const char* fname)
     int err = avformat_open_input(&format_ctx, fname, NULL, NULL);
     if (err < 0)
     {
-        LOG_ERR(err, "Error opening file %s", fname);
+        LOG_ERR_R(err, "Error opening file %s", fname);
         return false;
     }
     err = avformat_find_stream_info(format_ctx, NULL);
     if (err < 0)
     {
-        LOG_ERR(err, "Could not find codec parameters");
+        LOG_ERR_R(err, "Could not find codec parameters");
         return false;
     }
     // Dump information about file onto standard error
+#if DUMP_DEBUG_INFO
     av_dump_format(format_ctx, 0, fname, 0);
+#endif // DUMP_DEBUG_INFO
     for (unsigned i = 0; i < format_ctx->nb_streams; i++)
     {
         AVCodecContext *codec_ctx = format_ctx->streams[i]->codec;
@@ -177,31 +228,49 @@ bool VideoCapture_FFMPEG::open(const char* fname)
             int enc_height = codec_ctx->height;
 
             AVCodec *codec = avcodec_find_decoder(codec_ctx->codec_id);
-            if (!codec || avcodec_open2(codec_ctx, codec, NULL) < 0)
+            if (!codec)
             {
-                LOGE("Unsupported codec %s(%d)", codec_ctx->codec_name, codec_ctx->codec_id);
+                LOG_ERR("Unsupported codec %s(%d)", codec_ctx->codec->name, codec_ctx->codec_id);
                 return false;
+            }
+            int ret = avcodec_open2(codec_ctx, codec, NULL);
+            if (ret < 0)
+            {
+              LOG_ERR_R(ret, "avcodec_open2 failed with codec %s(%d)", codec_ctx->codec->name, codec_ctx->codec_id);
+              return false;
             }
 
             // checking width/height (since decoder can sometimes alter it, eg. vp6f)
             if (enc_width && (codec_ctx->width != enc_width))
-                codec_ctx->width = enc_width;
+              codec_ctx->width = enc_width;
             if (enc_height && (codec_ctx->height != enc_height))
-                codec_ctx->height = enc_height;
+              codec_ctx->height = enc_height;
 
             video_stream = i;
             video_st = format_ctx->streams[i];
             vcodec_ctx = video_st->codec;
 
-            src_frame = avcodec_alloc_frame();
-            if (!src_frame || !set_target_picture(dst_pix_fmt, codec_ctx->width, codec_ctx->height))
+            src_frame = av_frame_alloc();
+            if (!src_frame)
+            {
+                LOG_ERR("Memory error");
+              return false;
+            }
+
+            if (!set_target_picture(vcodec_ctx->pix_fmt, codec_ctx->width, codec_ctx->height))
                 return false;
 
             break;
         }
     }
 
-    return video_stream >= 0;
+    if (video_stream < 0)
+        return false;
+
+    // save some properties
+    frame_count = get_total_frames();
+
+    return true;
 }
 
 bool VideoCapture_FFMPEG::grabFrame()
@@ -212,7 +281,7 @@ bool VideoCapture_FFMPEG::grabFrame()
     int got_picture;
 
     int count_errs = 0;
-    const int max_number_of_attempts = 10;
+    const int max_number_of_attempts = 100;
 
     if (!format_ctx || !vcodec_ctx)  return false;
 
@@ -246,7 +315,7 @@ bool VideoCapture_FFMPEG::grabFrame()
             count_errs++;
             if (count_errs > max_number_of_attempts)
             {
-                LOGE("Can not grab frame (#%ld)", (long) frame_number);
+                LOG_ERR("can not grab frame (#%ld) with no video stream", (long) frame_number);
                 break;
             }
             continue;
@@ -255,7 +324,7 @@ bool VideoCapture_FFMPEG::grabFrame()
         // Decode video frame
         ret = avcodec_decode_video2(vcodec_ctx, src_frame, &got_picture, &packet);
         if (ret < 0)
-            return LOG_ERR(ret, "avcodec_decode_video2 failed (#%ld)", (long) frame_number), false;
+            return LOG_ERR_R(ret, "avcodec_decode_video2 failed (#%ld)", (long) frame_number), false;
 
         // Did we get a video frame?
         if (got_picture)
@@ -271,7 +340,7 @@ bool VideoCapture_FFMPEG::grabFrame()
             count_errs++;
             if (count_errs > max_number_of_attempts)
             {
-                LOGE("Can not grab frame (#%ld)", (long) frame_number);
+                LOG_ERR("can not grab frame (#%ld) with no picture", (long) frame_number);
                 break;
             }
         }
@@ -312,11 +381,11 @@ bool VideoCapture_FFMPEG::retrieveFrame(const uint8_t* data[4], int step[4])
                 NULL, NULL, NULL
                 );
             if (!img_convert_ctx)
-                return LOGE("Cannot initialize the conversion context!"), false;
+                return LOG_ERR("Cannot initialize the conversion context!"), false;
 
             int err = avpicture_alloc((AVPicture*)dst_frame, dst_pix_fmt, dst_width, dst_height);
             if (err < 0)
-                return LOG_ERR(err, "avpicture_alloc"), false;
+                return LOG_ERR_R(err, "avpicture_alloc"), false;
         }
         sws_scale(
             img_convert_ctx,
@@ -329,10 +398,11 @@ bool VideoCapture_FFMPEG::retrieveFrame(const uint8_t* data[4], int step[4])
             );
     }
 
+    AVFrame* frame = dst_frame ? dst_frame : src_frame;
     if (data)
-        memcpy(data, dst_frame ? dst_frame->data : src_frame->data, 4*sizeof(uint8_t *));
+        memcpy(data, frame->data, 4*sizeof(uint8_t *));
     if (step)
-        memcpy(step, dst_frame ? dst_frame->linesize : src_frame->linesize, 4*sizeof(int *));
+        memcpy(step, frame->linesize, 4*sizeof(int *));
 
     EXIT_FUNCTION;
 
@@ -361,7 +431,7 @@ double VideoCapture_FFMPEG::getProperty(int property_id)
     case FFMPEG_PROP_POS_AVI_RATIO:
         return r2d(video_st->time_base);
     case FFMPEG_PROP_FRAME_COUNT:
-        return get_total_frames();
+        return frame_count;
     case FFMPEG_PROP_FRAME_WIDTH:
         return dst_width;
     case FFMPEG_PROP_FRAME_HEIGHT:
@@ -429,12 +499,12 @@ bool VideoCapture_FFMPEG::setProperty(int property_id, double value)
 
 void VideoCapture_FFMPEG::seek(int64_t pos)
 {
-    pos = min(pos, get_total_frames());
+    pos = min(pos, frame_count);
     int delta = 16;
 
     // if we have not grabbed a single frame before first seek, let's read the first frame
     // and get some valuable information during the process
-    if (first_frame_number < 0 && get_total_frames() > 1)
+    if (first_frame_number < 0 && frame_count > 1)
         grabFrame();
 
     for (;;)
@@ -444,7 +514,8 @@ void VideoCapture_FFMPEG::seek(int64_t pos)
         int64_t time_stamp = video_st->start_time;
         double  time_base  = r2d(video_st->time_base);
         time_stamp += (int64_t)(sec / time_base + 0.5);
-        if (get_total_frames() > 1) av_seek_frame(format_ctx, video_stream, time_stamp, AVSEEK_FLAG_BACKWARD);
+        if (frame_count > 1)
+            av_seek_frame(format_ctx, video_stream, time_stamp, AVSEEK_FLAG_BACKWARD);
         avcodec_flush_buffers(vcodec_ctx);
         if (pos > 0)
         {
@@ -499,11 +570,6 @@ double VideoCapture_FFMPEG::get_duration_sec()
         sec = (double)video_st->duration * r2d(video_st->time_base);
     }
 
-    if (sec < EPS_ZERO)
-    {
-        sec = (double)video_st->duration * r2d(video_st->time_base);
-    }
-
     return sec;
 }
 
@@ -526,7 +592,11 @@ int64_t VideoCapture_FFMPEG::get_total_frames()
     int64_t nbf = video_st->nb_frames;
 
     if (nbf == 0)
-        nbf = (int64_t)floor(get_duration_sec() * get_fps() + 0.5);
+    {
+        LOGW("video_st->nb_frames is zero, calculate total frames from fps (%.3f) and duration (%.3f)",
+             get_fps(), get_duration_sec());
+        nbf = (int64_t) floor(get_duration_sec() * get_fps() + 0.5);
+    }
 
     return nbf;
 }
@@ -550,7 +620,7 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
     // check parameters
     if (fmt == AV_PIX_FMT_NONE || width <= 0 || height <= 0)
     {
-        LOGE("Invalid parameters");
+        LOG_ERR("Invalid parameters");
         return false;
     }
 
@@ -562,10 +632,10 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
     {
         if (!dst_frame)
         {
-            dst_frame = avcodec_alloc_frame();
+            dst_frame = av_frame_alloc();
             if (!dst_frame)
             {
-                LOGE("Memory error");
+                LOG_ERR("Memory error");
                 return false;
             }
         }
@@ -574,7 +644,7 @@ bool VideoCapture_FFMPEG::set_target_picture(AVPixelFormat fmt, int width, int h
         avpicture_free((AVPicture *)dst_frame);
     if (!needcvt)
     {
-        avcodec_free_frame(&dst_frame);
+        av_frame_free(&dst_frame);
         dst_frame = NULL;
     }
 
@@ -608,7 +678,7 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     st = avformat_new_stream(oc, 0);
     if (!st)
     {
-        LOGE("Could not allocate stream");
+        LOG_ERR("Could not allocate stream");
         return NULL;
     }
 
@@ -704,7 +774,7 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
         pkt.data= (uint8_t *)picture;
         pkt.size= sizeof(AVPicture);
         ret = av_write_frame(oc, &pkt);
-        if (ret < 0) LOG_ERR(ret, "av_write_frame");
+        if (ret < 0) LOG_ERR_R(ret, "av_write_frame");
     }
     else
     {
@@ -720,7 +790,7 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
 
         /* encode the image */
         ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
-        if (ret < 0) LOG_ERR(ret, "avcodec_encode_video2");
+        if (ret < 0) LOG_ERR_R(ret, "avcodec_encode_video2");
 
         /* if zero size, it means the image was buffered */
         if (ret == 0 && got_packet > 0)
@@ -749,7 +819,7 @@ void VideoWriter_FFMPEG::init()
 {
     oformat = 0;
     format_ctx = NULL;
-    picture = NULL;
+    dst_picture = NULL;
     picbuf = NULL;
     video_st = NULL;
     img_convert_ctx = NULL;
@@ -764,7 +834,7 @@ void VideoWriter_FFMPEG::init()
 void VideoWriter_FFMPEG::destroy()
 {
     // nothing to do if already released
-    if (!picture)
+    if (!dst_picture)
         return;
 
     /* no more frame to compress. The codec has a latency of a few
@@ -785,7 +855,7 @@ void VideoWriter_FFMPEG::destroy()
             }
         }
         int err = av_write_trailer(format_ctx);
-        if (err < 0) LOG_ERR(err, "av_write_trailer");
+        if (err < 0) LOG_ERR_R(err, "av_write_trailer");
     }
 
     if (img_convert_ctx)
@@ -796,8 +866,8 @@ void VideoWriter_FFMPEG::destroy()
 
     // free pictures
     if (video_st->codec->pix_fmt != input_pix_fmt)
-        avpicture_free((AVPicture *)picture);
-    av_free(picture);
+        avpicture_free((AVPicture *)dst_picture);
+    av_free(dst_picture);
 
     if (input_picture)
         av_free(input_picture);
@@ -840,7 +910,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     // check arguments
     if (!filename || fps < 0)
     {
-        LOGE("Invalid file name or fps");
+        LOG_ERR("Invalid file name or fps");
         return false;
     }
 
@@ -851,19 +921,20 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     height &= ~1;
     if (width <= 0 || height <= 0)
     {
-        LOGE("Invalid width or height");
+        LOG_ERR("Invalid width or height");
         return false;
     }
 
     // auto detect the output format from file name and fourcc code.
     oformat = av_guess_format(NULL, filename, NULL);
+    //oformat = find_mp4_format();
     if (!oformat)
     {
         LOGW("Could not deduce output format from file extension (%s): using MPEG.", filename);
         oformat = av_guess_format("mpeg", NULL, NULL);
         if (!oformat)
         {
-            LOGE("Could not deduce output format from short name (mpeg)");
+            LOG_ERR("Could not deduce output format from short name (mpeg)");
             return false;
         }
     }
@@ -897,7 +968,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     }
     if (codec_id == AV_CODEC_ID_NONE)
     {
-        LOGE("No codec id is found!");
+        LOG_ERR("No codec id is found!");
         return false;
     }
 
@@ -905,7 +976,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     format_ctx = avformat_alloc_context();
     if (!format_ctx)
     {
-        LOGE("Memory error");
+        LOG_ERR("Memory error");
         return false;
     }
 
@@ -961,7 +1032,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
      video codecs and allocate the necessary encode buffers */
     if (!video_st)
     {
-        LOGE("Failed to add video stream");
+        LOG_ERR("Failed to add video stream");
         return false;
     }
 
@@ -975,7 +1046,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     codec = avcodec_find_encoder(c->codec_id);
     if (!codec)
     {
-        LOGE("Could not find encoder for codec id %s (%d)", avcodec_get_name(c->codec_id), c->codec_id);
+        LOG_ERR("Could not find encoder for codec id %s (%d)", avcodec_get_name(c->codec_id), c->codec_id);
         return false;
     }
 
@@ -988,15 +1059,15 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     /* open the codec */
     if ((err = avcodec_open2(c, codec, NULL)) < 0)
     {
-        LOG_ERR(err, "Could not open codec '%s'", codec->name);
+        LOG_ERR_R(err, "Could not open codec '%s'", codec->name);
         return false;
     }
 
-    /* allocate the encoded raw picture */
-    picture = avcodec_alloc_frame();
-    if (!picture)
+    /* allocate the encoded raw dst_picture */
+    dst_picture = av_frame_alloc();
+    if (!dst_picture)
     {
-        LOGE("Memory error");
+        LOG_ERR("Memory error");
         return false;
     }
     if (c->pix_fmt != input_pix_fmt)
@@ -1004,11 +1075,11 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
         /* if the output format is not our input format, then a temporary
         picture of the input format is needed too. It is then converted
         to the required output format */
-        avpicture_alloc((AVPicture *)picture, c->pix_fmt, c->width, c->height);
-        input_picture = avcodec_alloc_frame();
+        avpicture_alloc((AVPicture *)dst_picture, c->pix_fmt, c->width, c->height);
+        input_picture = av_frame_alloc();
         if (!input_picture)
         {
-            LOGE("Memory error");
+            LOG_ERR("Memory error");
             return false;
         }
     }
@@ -1018,7 +1089,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     {
         if ((err = avio_open(&format_ctx->pb, filename, AVIO_FLAG_WRITE)) < 0)
         {
-            LOG_ERR(err, "Failed to open output video file");
+            LOG_ERR_R(err, "Failed to open output video file");
             return false;
         }
     }
@@ -1026,7 +1097,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     /* write the stream header, if any */
     if ((err = avformat_write_header(format_ctx, NULL)) < 0)
     {
-        LOG_ERR(err, "Failed to write video header");
+        LOG_ERR_R(err, "Failed to write video header");
         close();
         remove(filename);
         return false;
@@ -1065,16 +1136,18 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
 
         if (sws_scale(img_convert_ctx, input_picture->data,
                       input_picture->linesize, 0, frame_height,
-                      picture->data, picture->linesize) < 0)
+                      dst_picture->data, dst_picture->linesize) < 0)
             return false;
     }
     else
     {
-        avpicture_fill((AVPicture *)picture, data,
+        avpicture_fill((AVPicture *)dst_picture, data,
                        input_pix_fmt, frame_width, frame_height);
     }
 
-    int ret = write_frame(format_ctx, video_st, picture);
+    int ret = write_frame(format_ctx, video_st, dst_picture);
 
     return ret >= 0;
 }
+
+// vim: ts=4 sts=4 sw=4 et

@@ -3,7 +3,7 @@
 
 #if defined(FFMPEG_EXPORTS)
 #   if defined(_WINDOWS) || defined(__CYGWIN__)
-#       define FFMPEG_DLL __declspec(dllexport)
+#   define FFMPEG_DLL __declspec(dllexport)
 #   elif defined(__GNUC__) && __GNUC__ >= 4
 #       define FFMPEG_DLL __attribute__ ((visibility ("default")))
 #   else
