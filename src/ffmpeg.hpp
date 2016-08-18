@@ -61,7 +61,7 @@ private:
     int               dst_width, dst_height;
     SwsContext      * img_convert_ctx;
     AVFrame         * dst_frame;
-    int				  buf_size;
+    int               buf_size;
 
     int64_t           frame_number;
     int64_t           frame_count;

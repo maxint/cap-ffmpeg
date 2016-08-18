@@ -11,7 +11,7 @@
 #include <common/log.hpp>
 
 extern "C" {
-	#include <libavutil/imgutils.h>
+    #include <libavutil/imgutils.h>
 } // extern "C"
 
 VideoCapture_FFMPEG* ff_cap_create(const char* fname)
@@ -19,7 +19,7 @@ VideoCapture_FFMPEG* ff_cap_create(const char* fname)
     VideoCapture_FFMPEG *cap = new VideoCapture_FFMPEG();
     if (cap->open(fname))
         return cap;
-    
+
     // clean up
     delete cap;
     return NULL;
@@ -81,17 +81,17 @@ int ff_writer_write(VideoWriter_FFMPEG* writer, const unsigned char* data)
 
 int ff_get_buffer_size(int pix_fmt, int width, int height)
 {
-	return avpicture_get_size((AVPixelFormat) pix_fmt, width, height);
+    return avpicture_get_size((AVPixelFormat) pix_fmt, width, height);
 }
 
 int ff_get_pix_fmt(const char *name)
 {
-	return (int) av_get_pix_fmt(name);
+    return (int) av_get_pix_fmt(name);
 }
 
 const char* ff_get_pix_fmt_name(int pix_fmt)
 {
-	return av_get_pix_fmt_name((AVPixelFormat) pix_fmt);
+    return av_get_pix_fmt_name((AVPixelFormat) pix_fmt);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -140,7 +140,7 @@ struct SwsContext_FFMPEG
     }
 
     int scale(
-        const uint8_t *const src[4], const int srcStride[4], 
+        const uint8_t *const src[4], const int srcStride[4],
         uint8_t* dst[4], int dstStride[4]=NULL)
     {
         if (!dst && !dstStride)

@@ -22,4 +22,4 @@ template<typename T> T max(T a, T b) { return a > b ? a : b; }
 template<typename T> T min(T a, T b) { return a < b ? a : b; }
 
 
-#endif	//end of __JNI_UTILS_H__
+#endif  //end of __JNI_UTILS_H__
