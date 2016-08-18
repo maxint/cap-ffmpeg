@@ -17,11 +17,11 @@
 #else
 #  	include <stdio.h>
 #  	define _LOG_(L, fmt, ...) fprintf(stderr, "%s/%s: " fmt "\n", LOG_TAG, L, ##__VA_ARGS__)
-#  	define LOGV(fmt, ...) _LOG_("V", fmt, ##__VA_ARGS__)
-#  	define LOGD(fmt, ...) _LOG_("D", fmt, ##__VA_ARGS__)
-#  	define LOGI(fmt, ...) _LOG_("I", fmt, ##__VA_ARGS__)
-#  	define LOGW(fmt, ...) _LOG_("W", fmt, ##__VA_ARGS__)
-#  	define LOGE(fmt, ...) _LOG_("E", fmt, ##__VA_ARGS__)
+#  	define LOGV(fmt, ...)   _LOG_("V", fmt, ##__VA_ARGS__)
+#  	define LOGD(fmt, ...)   _LOG_("D", fmt, ##__VA_ARGS__)
+#  	define LOGI(fmt, ...)   _LOG_("I", fmt, ##__VA_ARGS__)
+#  	define LOGW(fmt, ...)   _LOG_("W", fmt, ##__VA_ARGS__)
+#  	define LOGE(fmt, ...)   _LOG_("E", fmt, ##__VA_ARGS__)
 #endif
 
 #ifndef NO_FUNC_LOG

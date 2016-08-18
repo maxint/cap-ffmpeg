@@ -4,15 +4,6 @@
 #include <time.h>
 #include <stdint.h>
 
-#define	SAFE_MEM_FREE(MEM)		if (MEM) {free(MEM); MEM = NULL;}
-#define	SAFE_MEM_DEL(MEM)		if (MEM) {delete MEM; MEM = NULL;}
-#define	SAFE_MEMARR_DEL(MEM)	if (MEM) {delete[] MEM; MEM = NULL;}
-
-#define	SAFE_LOCALREF_DEL(REF)	if (REF) {env->DeleteLocalRef(REF); REF = NULL;}
-#define	SAFE_GLOBALREF_DEL(REF)	if (REF) {env->DeleteGlobalRef(REF); REF = NULL;}
-
-#define	getThreadId()	        syscall(__NR_gettid)
-
 // return microsecond
 static inline int64_t getTime(void) {
 #ifdef __linux__

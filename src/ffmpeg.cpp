@@ -1,3 +1,9 @@
+//////////////////////////////////////////////////////////////////////////
+// Simple C Wrapper of FFMPEG (Version >= 2.1.1)
+// Author: maxint <maxint@foxmail.com>
+// License: GNU General Public License (https://www.gnu.org/copyleft/gpl.html)
+//////////////////////////////////////////////////////////////////////////
+
 #include "ffmpeg.hpp"
 
 #define DUMP_DEBUG_INFO 0
