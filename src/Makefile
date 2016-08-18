@@ -24,7 +24,7 @@ HEADERS	= ffmpeg_cap.h
 SRCS	= ffmpeg.cpp ffmpeg_cap.cpp
 INCS	= -I../build-mingw32/install/include
 LIBS	= -L../build-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -liconv
-CFLAGS 	+= -DFFMPEG_EXPORTS
+CFLAGS 	+= -Dffmpeg_cap_EXPORTS
 CPPFLAGS+= -D__STDC_CONSTANT_MACROS
 LDFLAGS += -Wl,--output-def=$(DEFOUT)
 ifndef PREFIX
