@@ -10,10 +10,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} CACHE INTERNAL "") 
 
 include_directories(../install/inc)
 
-add_executable(player
-  WIN32
-  resource.h
-  resource.rc
-  player.c)
-
+add_executable(player WIN32 resource.h resource.rc player.c)
 add_executable(writer_test writer_test.cpp)
+add_executable(writer_test_gray writer_test_gray.cpp)

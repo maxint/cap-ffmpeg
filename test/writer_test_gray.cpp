@@ -1,4 +1,3 @@
-#include <strsafe.h>
 #include <ffmpeg_cap.h>
 #include "dllloader.hpp"
 
@@ -30,45 +29,23 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (argc != 2)
-    {
-        MessageBox(NULL, TEXT("usage: <EXE> <VIDEO FILE>"), TEXT("Help"), MB_OK | MB_ICONSTOP);
-        return -1;
-    }
-
-    auto reader = ff_cap_create_f(argv[1]);
-    const auto count = (int) ff_cap_get_f(reader, FFMPEG_PROP_FRAME_COUNT);
-    const auto width = (int) ff_cap_get_f(reader, FFMPEG_PROP_FRAME_WIDTH);
-    const auto height = (int) ff_cap_get_f(reader, FFMPEG_PROP_FRAME_HEIGHT);
-    const auto pix_fmt = (int) ff_cap_get_f(reader, FFMPEG_PROP_PIXEL_FORMAT);
-    const auto fourcc = (int) ff_cap_get_f(reader, FFMPEG_PROP_FOURCC);
-    const auto fps = ff_cap_get_f(reader, FFMPEG_PROP_FPS);
-    const auto pix_fmt_name = ff_get_pix_fmt_name_f(pix_fmt);
-
-    char szDstFileName[MAX_PATH];
-#if 1
-    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.mp4", argv[1]);
-    auto writer = ff_writer_create_f(szDstFileName, 0, fps, width, height, pix_fmt);
-    //auto writer = ff_writer_create_f(szDstFileName, FFMPEG_FCC('H264'), fps, width, height, pix_fmt);
-#else
-    StringCchPrintf(szDstFileName, MAX_PATH, "%s_dump.avi", argv[1]);
-    auto writer = ff_writer_create_f(szDstFileName, FFMPEG_FCC('XVID'), fps, width, height, pix_fmt);
-#endif
+    const int width = 640;
+    const int height = 480;
+    const int fps = 30;
+    const int count = 255;
+    const int pix_fmt = ff_get_pix_fmt_f("gray");
+    unsigned char* data = new unsigned char[width*height];
+    auto writer = ff_writer_create_f("gray.mp4", 0, fps, width, height, pix_fmt);
 
     if (writer)
     {
-        const unsigned char* data[4];
-        int step[4];
         for (int i = 0; i < count; ++i)
         {
-            printf("writing %d/%d frame\n", i, count);
-            if (ff_cap_grab_f(reader) && ff_cap_retrieve_f(reader, data, step))
-                ff_writer_write_f(writer, data[0]);
-            else
-                printf("    no data retrieved\n");
+            memset(data, i, width*height);
+            ff_writer_write_f(writer, data);
         }
     }
 
+    delete[] data;
     ff_writer_release_f(&writer);
-    ff_cap_release_f(&reader);
 }
