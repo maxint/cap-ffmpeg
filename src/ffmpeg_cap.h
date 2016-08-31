@@ -142,10 +142,11 @@ typedef struct SwsContext_FFMPEG SwsContext_FFMPEG;
  * Be warned that srcFilter and dstFilter are not checked, they
  * are assumed to remain the same.
  */
-FFMPEG_CAP_DLL SwsContext_FFMPEG* ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
-                                                      int srcW, int srcH, int srcFmt,
-                                                      int dstW, int dstH, int dstFmt,
-                                                      int flags);
+FFMPEG_CAP_DLL SwsContext_FFMPEG*
+ff_sws_getCachedContext(SwsContext_FFMPEG* ctx,
+                        int srcW, int srcH, int srcFmt,
+                        int dstW, int dstH, int dstFmt,
+                        int flags);
 /**
  * Free the swscaler context swsContext.
  * If swsContext is NULL, then does nothing.
@@ -173,9 +174,10 @@ FFMPEG_CAP_DLL void ff_sws_freeContext(SwsContext_FFMPEG** ctx);
  *                  the destination image
  * @return          the height of the output slice
  */
-FFMPEG_CAP_DLL int ff_sws_scale(SwsContext_FFMPEG* ctx,
-                            const unsigned char*const src[], const int srcStride[],
-                            unsigned char* dst[], int dstStride[]);
+FFMPEG_CAP_DLL int
+ff_sws_scale(SwsContext_FFMPEG* ctx,
+             const unsigned char*const src[], const int srcStride[],
+             unsigned char* dst[], int dstStride[]);
 
 #ifdef __cplusplus
 }

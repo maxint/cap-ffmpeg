@@ -13,8 +13,7 @@ extern "C" {
     #include <libswscale/swscale.h>
 } // extern "C"
 
-#include <common/thread.hpp>
-#include <common/utils.hpp>
+#include <stdint.h>
 #include "ffmpeg_cap.h"
 
 struct VideoCapture_FFMPEG

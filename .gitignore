@@ -1,3 +1,5 @@
+.vscode/
+
 ffmpeg-*/
 install/
 *-build/

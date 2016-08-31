@@ -5,17 +5,48 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "ffmpeg.hpp"
-
-#define DUMP_DEBUG_INFO 0
-#define NO_FUNC_LOG
-#define LOG_TAG "ffmpeg"
-#include <common/log.hpp>
-
 #include <math.h>       /* floor */
 
 extern "C" {
 #   include <libavutil/imgutils.h>
 } // extern "C"
+
+#define DUMP_DEBUG_INFO 0
+#define NO_FUNC_LOG
+
+//////////////////////////////////////////////////////////////////////////
+// Include these macros here for independent code.
+#define LOG_TAG "ffmpeg"
+#if defined(__ANDROID__) || defined(ANDROID)
+#  	include <android/log.h>
+#  	define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE,LOG_TAG, ##__VA_ARGS__)
+#  	define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,  LOG_TAG, ##__VA_ARGS__)
+#  	define LOGI(...) __android_log_print(ANDROID_LOG_INFO,   LOG_TAG, ##__VA_ARGS__)
+#  	define LOGW(...) __android_log_print(ANDROID_LOG_WARN,   LOG_TAG, ##__VA_ARGS__)
+#  	define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,  LOG_TAG, ##__VA_ARGS__)
+#else
+#  	include <stdio.h>
+#  	define _LOG_(L, fmt, ...) fprintf(stderr, "%s/%s: " fmt "\n", LOG_TAG, L, ##__VA_ARGS__)
+#  	define LOGV(fmt, ...) _LOG_("V", fmt, ##__VA_ARGS__)
+#  	define LOGD(fmt, ...) _LOG_("D", fmt, ##__VA_ARGS__)
+#  	define LOGI(fmt, ...) _LOG_("I", fmt, ##__VA_ARGS__)
+#  	define LOGW(fmt, ...) _LOG_("W", fmt, ##__VA_ARGS__)
+#  	define LOGE(fmt, ...) _LOG_("E", fmt, ##__VA_ARGS__)
+#endif
+#ifndef NO_FUNC_LOG
+#   define ENTER_FUNCTION	LOGV("[in ] %s:%s", __FILE__, __FUNCTION__)
+#   define EXIT_FUNCTION	LOGV("[out] %s:%s", __FILE__, __FUNCTION__)
+#	define QLOG				LOGD("%s(%d):%s", __FILE__, __LINE__, __FUNCTION__)
+#else
+#   define ENTER_FUNCTION
+#   define EXIT_FUNCTION
+#	define QLOG
+#endif	//end of NO_JNI_LOG
+#undef max
+#undef min
+template<typename T> T max(T a, T b) { return a > b ? a : b; }
+template<typename T> T min(T a, T b) { return a < b ? a : b; }
+//////////////////////////////////////////////////////////////////////////
 
 static inline void dump_all_iformat()
 {
@@ -1076,11 +1107,16 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
         LOG_ERR("Memory error");
         return false;
     }
+    dst_picture->format = c->pix_fmt;
+    dst_picture->width = c->width;
+    dst_picture->height = c->height;
     if (c->pix_fmt != input_pix_fmt)
     {
         /* if the output format is not our input format, then a temporary
         picture of the input format is needed too. It is then converted
         to the required output format */
+        av_log(NULL, AV_LOG_DEBUG, "Input pixel format (%s) is not same with output format (%s)\n",
+               av_get_pix_fmt_name(input_pix_fmt), av_get_pix_fmt_name(c->pix_fmt));
         avpicture_alloc((AVPicture *)dst_picture, c->pix_fmt, c->width, c->height);
         input_picture = av_frame_alloc();
         if (!input_picture)
@@ -1105,7 +1141,8 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
     {
         LOG_ERR_R(err, "Failed to write video header");
         close();
-        remove(filename);
+        if (!(oformat->flags & AVFMT_NOFILE))
+            remove(filename);
         return false;
     }
     frame_width = width;
@@ -1128,6 +1165,9 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
 
         if (!img_convert_ctx)
         {
+            av_log(NULL, AV_LOG_DEBUG, "Create conversion context: (%s:%dx%d)->(%s:%dx%d)\n",
+                   av_get_pix_fmt_name(input_pix_fmt), frame_width, frame_height,
+                   av_get_pix_fmt_name(c->pix_fmt), c->width, c->height);
             img_convert_ctx = sws_getContext(frame_width,
                                              frame_height,
                                              input_pix_fmt,
@@ -1151,6 +1191,7 @@ bool VideoWriter_FFMPEG::writeFrame(const uint8_t* data)
                        input_pix_fmt, frame_width, frame_height);
     }
 
+    //av_log(NULL, AV_LOG_DEBUG, "dst_picture: %d, %dx%d\n", dst_picture->format, dst_picture->width, dst_picture->height);
     int ret = write_frame(format_ctx, video_st, dst_picture);
 
     return ret >= 0;

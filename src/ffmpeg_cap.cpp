@@ -7,11 +7,8 @@
 #include "ffmpeg_cap.h"
 #include "ffmpeg.hpp"
 
-#define LOG_TAG "ffmpeg"
-#include <common/log.hpp>
-
 extern "C" {
-    #include <libavutil/imgutils.h>
+#   include <libavutil/imgutils.h>
 } // extern "C"
 
 VideoCapture_FFMPEG* ff_cap_create(const char* fname)
