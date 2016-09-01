@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     const int width = 640;
     const int height = 480;
     const int fps = 30;
-    const int count = 255;
+    const int count = 256;
     const int pix_fmt = ff_get_pix_fmt_f("gray");
     unsigned char* data = new unsigned char[width*height];
     auto writer = ff_writer_create_f("gray.mp4", 0, fps, width, height, pix_fmt);
