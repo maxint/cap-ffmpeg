@@ -19,7 +19,7 @@
 #endif
 
 #define FFMPEG_CAP_VERSION_MAJOR 1
-#define FFMPEG_CAP_VERSION_MINOR 0
+#define FFMPEG_CAP_VERSION_MINOR 1
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,0 +1,5 @@
+v1.1
+1. Fix bug of video writer with input data in "gray8" pixel format.
+
+v1.0
+1. First version.
