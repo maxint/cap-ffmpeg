@@ -2,8 +2,7 @@
 
 ffmpeg-*/
 install/
-*-build/
-build-*/
+build/
 
 *.exe
 *.dll
