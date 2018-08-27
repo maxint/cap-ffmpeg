@@ -7,10 +7,10 @@ Install
 =======
 
 * Download the lastest [FFMPEG source](http://www.ffmpeg.org/download.html) to 'ffmpeg-source' directory
-* Build ffmpeg and C wrapper (installed into 'install' directory)
+* Build ffmpeg and C wrapper (installed into 'install' directory) in [MinGW](http://www.mingw.org/)
 
-- `build_ffmpeg_mingw32.sh`: Build ffmpeg in MinGW.
-- `build_ffmpeg_mingw32.sh`: Build `ffmpeg_cap` C wrapper in MinGW.
+    - `build_ffmpeg_mingw32.sh`: Build ffmpeg in MinGW.
+    - `build_cap_ffmpeg_mingw32.sh`: Build `ffmpeg_cap` C wrapper in MinGW.
 
 
 Directories
