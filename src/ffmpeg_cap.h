@@ -3,8 +3,8 @@
 // Author: maxint <maxint@foxmail.com>
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef __FFMPEG_H__
-#define __FFMPEG_H__
+#ifndef __FFMPEG_CAP_H__
+#define __FFMPEG_CAP_H__
 
 #if defined(ffmpeg_cap_EXPORTS)
 #   if defined(_WINDOWS) || defined(__CYGWIN__)
@@ -183,4 +183,4 @@ ff_sws_scale(SwsContext_FFMPEG* ctx,
 }
 #endif
 
-#endif // __FFMPEG_H__
+#endif /* end of header file */
