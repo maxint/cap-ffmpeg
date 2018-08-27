@@ -8,7 +8,7 @@ BUILD_DIR=build-$TARGET_OS
 mkdir $BUILD_DIR -p
 pushd $BUILD_DIR
 
-../../ffmpeg-source/configure \
+../ffmpeg-source/configure \
     --target-os=$TARGET_OS \
     --prefix="install" \
     --fatal-warnings \

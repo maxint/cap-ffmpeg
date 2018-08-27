@@ -1,6 +1,6 @@
 .vscode/
 
-ffmpeg-*/
+ffmpeg-source/
 install/
 build/
 build-*/
