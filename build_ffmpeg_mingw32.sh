@@ -6,7 +6,7 @@ TARGET_OS=mingw32
 
 BUILD_DIR=build-$TARGET_OS
 mkdir $BUILD_DIR -p
-pushd $BUILD_DIR
+cd $BUILD_DIR
 
 ../ffmpeg-source/configure \
     --target-os=$TARGET_OS \
@@ -23,10 +23,6 @@ pushd $BUILD_DIR
     --disable-network \
     --disable-protocols \
     --enable-protocol=file \
-    --disable-indevs \
-    --disable-outdevs \
-    --disable-filters \
-    --disable-bsfs \
     --enable-gpl \
     --enable-version3 \
     --enable-nonfree \
@@ -49,6 +45,11 @@ pushd $BUILD_DIR
     --enable-muxer=mp4 \
     --enable-muxer=avi \
 
+    #--disable-indevs \
+    #--disable-outdevs \
+    #--disable-filters \
+    #--disable-bsfs \
+
 make clean
 make install
 
@@ -56,4 +57,4 @@ make install
 # cd install/lib 
 # strip -g *.a
 
-popd
+cd -
