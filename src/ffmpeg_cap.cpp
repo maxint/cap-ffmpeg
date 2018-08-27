@@ -11,6 +11,8 @@ extern "C" {
 #   include <libavutil/imgutils.h>
 } // extern "C"
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 VideoCapture_FFMPEG* ff_cap_create(const char* fname)
 {
     VideoCapture_FFMPEG *cap = new VideoCapture_FFMPEG();

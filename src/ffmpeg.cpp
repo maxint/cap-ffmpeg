@@ -14,6 +14,10 @@ extern "C" {
 #define DUMP_DEBUG_INFO 0
 #define NO_FUNC_LOG
 
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic pop
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 //////////////////////////////////////////////////////////////////////////
 // Include these macros here for independent code.
 #define LOG_TAG "ffmpeg"
@@ -720,7 +724,7 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     }
 
     c = st->codec;
-    if (codec_id != CODEC_ID_NONE)
+    if (codec_id != AV_CODEC_ID_NONE)
         c->codec_id = codec_id;
     else
         c->codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
@@ -779,9 +783,9 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
     c->pix_fmt = pixel_format;
 
-    if (c->codec_id == CODEC_ID_MPEG2VIDEO)
+    if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO)
         c->max_b_frames = 2;
-    if (c->codec_id == CODEC_ID_MPEG1VIDEO || c->codec_id == CODEC_ID_MSMPEG4V3)
+    if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO || c->codec_id == AV_CODEC_ID_MSMPEG4V3)
     {
         /* needed to avoid using macroblocks in which some coeffs overflow
            this doesnt happen with normal video, it just happens here as the
@@ -1035,21 +1039,21 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
         codec_pix_fmt = input_pix_fmt;
         break;
     case AV_CODEC_ID_HUFFYUV:
-        codec_pix_fmt = PIX_FMT_YUV422P;
+        codec_pix_fmt = AV_PIX_FMT_YUV422P;
         break;
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_LJPEG:
-        codec_pix_fmt = PIX_FMT_YUVJ420P;
+        codec_pix_fmt = AV_PIX_FMT_YUVJ420P;
         bitrate_scale = 3;
         break;
     case AV_CODEC_ID_RAWVIDEO:
-        codec_pix_fmt = input_pix_fmt == PIX_FMT_GRAY8 ||
-            input_pix_fmt == PIX_FMT_GRAY16LE ||
-            input_pix_fmt == PIX_FMT_GRAY16BE ? input_pix_fmt : PIX_FMT_YUV420P;
+        codec_pix_fmt = input_pix_fmt == AV_PIX_FMT_GRAY8 ||
+            input_pix_fmt == AV_PIX_FMT_GRAY16LE ||
+            input_pix_fmt == AV_PIX_FMT_GRAY16BE ? input_pix_fmt : AV_PIX_FMT_YUV420P;
         break;
     default:
         // good for lossy formats, MPEG, etc.
-        codec_pix_fmt = PIX_FMT_YUV420P;
+        codec_pix_fmt = AV_PIX_FMT_YUV420P;
         break;
     }
     av_log(NULL, AV_LOG_DEBUG, "input pixel format: %s (%d)\n",
