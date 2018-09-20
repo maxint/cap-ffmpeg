@@ -22,8 +22,9 @@ LDFLAGS += -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,--as-needed -Wl,--strip-
 MNAME	= ffmpeg_cap
 HEADERS	= ffmpeg_cap.h
 SRCS	= ffmpeg_cap_impl.cpp ffmpeg_cap.cpp
-INCS	= -I../build-mingw32/install/include
-LIBS	= -L../build-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -liconv -static-libstdc++ -static-libgcc
+INCS	= -I../build-ffmpeg-mingw32/install/include
+LIBS	= -L../build-ffmpeg-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -static -liconv -static-libstdc++ -static-libgcc
+# LIBS	= -L../build-ffmpeg-mingw32/install/lib -L../build-x264-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -lx264 -static -liconv -static-libstdc++ -static-libgcc
 CFLAGS 	+= -Dffmpeg_cap_EXPORTS
 CPPFLAGS+= -D__STDC_CONSTANT_MACROS
 LDFLAGS += -Wl,--output-def=$(DEFOUT)

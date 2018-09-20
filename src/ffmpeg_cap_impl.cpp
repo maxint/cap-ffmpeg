@@ -20,7 +20,7 @@ extern "C" {
 
 //////////////////////////////////////////////////////////////////////////
 // Include these macros here for independent code.
-#define LOG_TAG "ffmpeg"
+#define LOG_TAG "ffmpeg_cap"
 #if defined(__ANDROID__) || defined(ANDROID)
 #  	include <android/log.h>
 #  	define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE,LOG_TAG, ##__VA_ARGS__)
@@ -92,35 +92,36 @@ class InternalFFMpegRegister
 public:
     InternalFFMpegRegister()
     {
-        if (!initialized)
-        {
+        if (initialized) return;
+
 #if DUMP_DEBUG_INFO
-            LOGI("FFMPEG version: %d", avformat_version());
-            LOGI("FFMPEG configuration: %s", avformat_configuration());
-            av_log_set_level(AV_LOG_DEBUG);
+        LOGI("FFMPEG version: %d", avformat_version());
+        LOGI("FFMPEG configuration: %s", avformat_configuration());
+        av_log_set_level(AV_LOG_DEBUG);
 #else
-            av_log_set_level(AV_LOG_ERROR);
+        av_log_set_level(AV_LOG_ERROR);
 #endif
 
-            avformat_network_init();
+        avformat_network_init();
 
-            /* register all codecs, demux and protocols */
-            av_register_all();
+        /* register all codecs, demux and protocols */
+        av_register_all();
 
-            /* register a callback function for synchronization */
-            //av_lockmgr_register(&LockCallBack);
+        /* register a callback function for synchronization */
+        //av_lockmgr_register(&LockCallBack);
 
-            // NOTE: dump debug information
+        // NOTE: dump debug information
 #if DUMP_DEBUG_INFO
-            dump_all_iformat();
-            dump_all_oformat();
+        dump_all_iformat();
+        dump_all_oformat();
 #endif // DUMP_DEBUG_INFO
 
-            initialized = true;
-        }
+        initialized = true;
     }
     ~InternalFFMpegRegister()
     {
+        if (!initialized) return;
+
         avformat_network_deinit();
         //av_lockmgr_register(NULL);
 
@@ -1092,6 +1093,7 @@ bool VideoWriter_FFMPEG::open(const char* filename, unsigned fourcc, double fps,
         LOG_ERR("Could not find encoder for codec id %s (%d)", avcodec_get_name(c->codec_id), c->codec_id);
         return false;
     }
+    av_log(NULL, AV_LOG_DEBUG, "Use encoder codec %s (%d)", avcodec_get_name(c->codec_id), c->codec_id);
 
     int64_t lbit_rate = (int64_t)c->bit_rate;
     lbit_rate += (bitrate / 2);

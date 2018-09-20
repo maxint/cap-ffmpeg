@@ -8,6 +8,8 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <strsafe.h>
+#include <io.h>
+#include <fcntl.h>
 
 #define MAX_LOADSTRING 100
 
@@ -20,7 +22,6 @@ LONG nTimer;
 VideoCapture_FFMPEG* cap = NULL;
 int nWidth = 0;
 int nHeight = 0;
-int nFmt = 0;
 unsigned char *data[4] = {0};
 int step[4] = {0};
 BITMAPINFO bmi;
@@ -31,8 +32,6 @@ typedef double  (*ff_cap_get_t)(VideoCapture_FFMPEG* cap, int propid);
 typedef int     (*ff_cap_set_t)(VideoCapture_FFMPEG* cap, int propid, double val);
 typedef int     (*ff_cap_grab_t)(VideoCapture_FFMPEG* cap);
 typedef int     (*ff_cap_retrieve_t)(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
-typedef int     (*ff_get_pix_fmt_t)(const char *name);
-typedef const char* (*ff_get_pix_fmt_name_t)(int pix_fmt);
 
 ff_cap_create_t     ff_cap_create_f = 0;
 ff_cap_release_t    ff_cap_release_f = 0;
@@ -40,14 +39,9 @@ ff_cap_get_t        ff_cap_get_f = 0;
 ff_cap_set_t        ff_cap_set_f = 0;
 ff_cap_grab_t       ff_cap_grab_f = 0;
 ff_cap_retrieve_t   ff_cap_retrieve_f = 0;
-ff_get_pix_fmt_t    ff_get_pix_fmt_f = 0;
-ff_get_pix_fmt_name_t  ff_get_pix_fmt_name_f = 0;
 
 // Forward declarations of functions included in this code module:
-ATOM				RegisterWindowClass(HINSTANCE hInstance);
-BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
-LRESULT CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 void ReportWindowError(LPTSTR lpszFunction)
 {
@@ -79,80 +73,6 @@ void ReportWindowError(LPTSTR lpszFunction)
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);
     //ExitProcess(dw);
-}
-
-int APIENTRY WinMain(HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     LPSTR     lpCmdLine,
-                     int       nCmdShow)
-{
- 	// TODO: Place code here.
-    MSG msg = {0};
-    HACCEL hAccelTable = {0};
-    HMODULE hModule = 0;
-
-    if (__argc != 2)
-    {
-        MessageBox(NULL, TEXT("usage: <EXE> <VIDEO FILE>"), TEXT("Help"), MB_OK | MB_ICONSTOP);
-        return -1;
-    }
-
-    hModule = LoadLibrary("ffmpeg_cap.dll");
-    if (0 == hModule)
-    {
-        MessageBox(NULL, TEXT("Can not load ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
-        goto EXIT;
-    }
-
-    ff_cap_create_f     = (ff_cap_create_t  ) GetProcAddress(hModule, TEXT("ff_cap_create"));
-    ff_cap_release_f    = (ff_cap_release_t ) GetProcAddress(hModule, TEXT("ff_cap_release"));
-    ff_cap_get_f        = (ff_cap_get_t     ) GetProcAddress(hModule, TEXT("ff_cap_get"));
-    ff_cap_set_f        = (ff_cap_set_t     ) GetProcAddress(hModule, TEXT("ff_cap_set"));
-    ff_cap_grab_f       = (ff_cap_grab_t    ) GetProcAddress(hModule, TEXT("ff_cap_grab"));
-    ff_cap_retrieve_f   = (ff_cap_retrieve_t) GetProcAddress(hModule, TEXT("ff_cap_retrieve"));
-    ff_get_pix_fmt_f    = (ff_get_pix_fmt_t ) GetProcAddress(hModule, TEXT("ff_get_pix_fmt"));
-    ff_get_pix_fmt_name_f = (ff_get_pix_fmt_name_t) GetProcAddress(hModule, TEXT("ff_get_pix_fmt_name"));
-
-    if (ff_cap_create_f == 0 || ff_cap_release_f == 0 || ff_cap_get_f == 0 ||
-        ff_cap_set_f == 0 || ff_cap_grab_f == 0 || ff_cap_retrieve_f == 0)
-    {
-        MessageBox(NULL, TEXT("Can not find enough process address in ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
-        goto EXIT;
-    }
-
-	// Initialize global strings
-	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    StringCchPrintf(szTitle, MAX_LOADSTRING, TEXT("%s - %s"), szTitle, __argv[1]);
-	LoadString(hInstance, IDS_WINDOW_CLASS, szWindowClass, MAX_LOADSTRING);
-	if (!RegisterWindowClass(hInstance))
-    {
-        ReportWindowError(TEXT("RegisterClassEx"));
-        goto EXIT;
-    }
-
-	// Perform application initialization:
-	if (!InitInstance (hInstance, nCmdShow)) 
-	{
-        goto EXIT;
-	}
-
-	hAccelTable = LoadAccelerators(hInstance, (LPCTSTR)IDR_DSHOW_CAP_DEMO);
-
-	// Main message loop:
-	while (GetMessage(&msg, NULL, 0, 0)) 
-	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) 
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
-
-EXIT:
-    if (hModule)
-        FreeLibrary(hModule);
-
-	return msg.wParam;
 }
 
 //
@@ -220,6 +140,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     return TRUE;
 }
 
+// Mesage handler for about box.
+LRESULT CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+		case WM_INITDIALOG:
+				return TRUE;
+
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
+			{
+				EndDialog(hDlg, LOWORD(wParam));
+				return TRUE;
+			}
+			break;
+	}
+    return FALSE;
+}
+
 //
 //  FUNCTION: WndProc(HWND, unsigned, WORD, LONG)
 //
@@ -245,7 +184,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         nWidth  = (int) ff_cap_get_f(cap, FFMPEG_PROP_FRAME_WIDTH);
         nHeight = (int) ff_cap_get_f(cap, FFMPEG_PROP_FRAME_HEIGHT);
-        nFmt = (int) ff_cap_get_f(cap, FFMPEG_PROP_PIXEL_FORMAT);
 		nTimer = SetTimer(hWnd, 1, 30, NULL);
 
         SetWindowPos(hWnd, 0, 0, 0, nWidth, nHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
@@ -325,21 +263,108 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
    return 0;
 }
 
-// Mesage handler for about box.
-LRESULT CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+int APIENTRY WinMain(HINSTANCE hInstance,
+                     HINSTANCE hPrevInstance,
+                     LPSTR     lpCmdLine,
+                     int       nCmdShow)
 {
-	switch (message)
-	{
-		case WM_INITDIALOG:
-				return TRUE;
+    //{
+    //    CONSOLE_SCREEN_BUFFER_INFO coninfo;
+    //    // allocate a console for this app
+    //    AllocConsole();
+    //    // set the screen buffer to be big enough to let us scroll text
+    //    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+    //    coninfo.dwSize.Y = 999;
+    //    // How many lines do you want to have in the console buffer
+    //    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+    //}
+    //{
+    //    HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+    //    int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
+    //    FILE* hf_out = _fdopen(hCrt, "w");
+    //    setvbuf(hf_out, NULL, _IONBF, 0);
+    //    *stdout = *hf_out;
+    //}
+    //{
+    //    HANDLE handle_out = GetStdHandle(STD_ERROR_HANDLE);
+    //    int hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
+    //    FILE* hf_out = _fdopen(hCrt, "w");
+    //    setvbuf(hf_out, NULL, _IONBF, 0);
+    //    *stderr = *hf_out;
+    //}
+    //{
+    //    HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
+    //    int hCrt = _open_osfhandle((long) handle_in, _O_TEXT);
+    //    FILE* hf_in = _fdopen(hCrt, "r");
+    //    setvbuf(hf_in, NULL, _IONBF, 0);
+    //    *stdin = *hf_in;
+    //}
 
-		case WM_COMMAND:
-			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
-			{
-				EndDialog(hDlg, LOWORD(wParam));
-				return TRUE;
-			}
-			break;
+ 	// TODO: Place code here.
+    MSG msg = {0};
+    HACCEL hAccelTable = {0};
+    HMODULE hModule = 0;
+
+    if (__argc != 2)
+    {
+        MessageBox(NULL, TEXT("usage: <EXE> <VIDEO FILE>"), TEXT("Help"), MB_OK | MB_ICONSTOP);
+        return -1;
+    }
+
+    hModule = LoadLibrary("ffmpeg_cap.dll");
+    if (0 == hModule)
+    {
+        MessageBox(NULL, TEXT("Can not load ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        goto EXIT;
+    }
+
+    ff_cap_create_f     = (ff_cap_create_t  ) GetProcAddress(hModule, TEXT("ff_cap_create"));
+    ff_cap_release_f    = (ff_cap_release_t ) GetProcAddress(hModule, TEXT("ff_cap_release"));
+    ff_cap_get_f        = (ff_cap_get_t     ) GetProcAddress(hModule, TEXT("ff_cap_get"));
+    ff_cap_set_f        = (ff_cap_set_t     ) GetProcAddress(hModule, TEXT("ff_cap_set"));
+    ff_cap_grab_f       = (ff_cap_grab_t    ) GetProcAddress(hModule, TEXT("ff_cap_grab"));
+    ff_cap_retrieve_f   = (ff_cap_retrieve_t) GetProcAddress(hModule, TEXT("ff_cap_retrieve"));
+
+    if (ff_cap_create_f == 0 || ff_cap_release_f == 0 || ff_cap_get_f == 0 ||
+        ff_cap_set_f == 0 || ff_cap_grab_f == 0 || ff_cap_retrieve_f == 0)
+    {
+        MessageBox(NULL, TEXT("Can not find enough process address in ffmpeg_cap.dll"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        goto EXIT;
+    }
+
+	// Initialize global strings
+	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    StringCchPrintf(szTitle, MAX_LOADSTRING, TEXT("%s - %s"), szTitle, __argv[1]);
+	LoadString(hInstance, IDS_WINDOW_CLASS, szWindowClass, MAX_LOADSTRING);
+	if (!RegisterWindowClass(hInstance))
+    {
+        ReportWindowError(TEXT("RegisterClassEx"));
+        goto EXIT;
+    }
+
+	// Perform application initialization:
+	if (!InitInstance (hInstance, nCmdShow)) 
+	{
+        goto EXIT;
 	}
-    return FALSE;
+
+	hAccelTable = LoadAccelerators(hInstance, (LPCTSTR)IDR_DSHOW_CAP_DEMO);
+
+	// Main message loop:
+	while (GetMessage(&msg, NULL, 0, 0)) 
+	{
+		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) 
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+EXIT:
+    if (hModule)
+        FreeLibrary(hModule);
+
+    FreeConsole();
+
+	return msg.wParam;
 }

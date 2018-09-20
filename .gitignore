@@ -19,3 +19,5 @@ build-*/
 /*.avi
 /*.flv
 /*.mov
+/x264-source
+/*.bz2
