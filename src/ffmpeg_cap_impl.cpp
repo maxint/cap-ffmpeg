@@ -4,15 +4,15 @@
 // License: GNU General Public License (https://www.gnu.org/copyleft/gpl.html)
 //////////////////////////////////////////////////////////////////////////
 
-#include "ffmpeg.hpp"
+#include "ffmpeg_cap_impl.hpp"
 #include <math.h>       /* floor */
 
 extern "C" {
 #   include <libavutil/imgutils.h>
 } // extern "C"
 
-#define DUMP_DEBUG_INFO 0
-#define NO_FUNC_LOG
+#define DUMP_DEBUG_INFO 1
+// #define NO_FUNC_LOG
 
 // #pragma GCC diagnostic push
 // #pragma GCC diagnostic pop
@@ -795,7 +795,7 @@ static AVStream *add_video_stream(AVFormatContext *oc,
     }
     // some formats want stream headers to be seperate
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     return st;
 }
@@ -806,7 +806,9 @@ static int write_frame(AVFormatContext* oc, AVStream* video_st, AVFrame* picture
     int ret = 0;
     AVPacket pkt;
 
-    if (oc->oformat->flags & AVFMT_RAWPICTURE)
+    // if (oc->oformat->flags & AVFMT_RAWPICTURE)
+    // https://pastebin.com/Bkb32qKW
+    if (oc->oformat->flags & AVFMT_NOFILE)
     {
         /* raw video case. The API will change slightly in the near future for that */
         av_init_packet(&pkt);
@@ -886,7 +888,7 @@ void VideoWriter_FFMPEG::destroy()
     /* write the trailer, if any */
     if (ok && format_ctx)
     {
-        if ((format_ctx->oformat->flags & AVFMT_RAWPICTURE) == 0)
+        if ((format_ctx->oformat->flags & AVFMT_NOFILE) == 0)
         {
             for (;;)
             {

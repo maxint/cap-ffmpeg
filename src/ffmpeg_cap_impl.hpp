@@ -3,8 +3,7 @@
 // Author: maxint <maxint@foxmail.com>
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef __FFMPEG_TK_HPP__
-#define __FFMPEG_TK_HPP__
+#pragma once
 
 // Current used ffmpeg version: 2.8
 extern "C" {
@@ -101,5 +100,3 @@ private:
     bool              ok;
     SwsContext      * img_convert_ctx;
 };
-
-#endif /* end of include guard */

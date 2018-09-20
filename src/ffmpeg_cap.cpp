@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "ffmpeg_cap.h"
-#include "ffmpeg.hpp"
+#include "ffmpeg_cap_impl.hpp"
 
 extern "C" {
 #   include <libavutil/imgutils.h>

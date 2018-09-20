@@ -5,7 +5,7 @@ CXX		= g++
 
 CFLAGS  = -O3 -Wall -I.
 CPPFLAGS=
-LDFLAGS	= -shared -Wl,--no-undefined -static-libgcc -static-libstdc++ -static -lpthread
+LDFLAGS	= -shared -Wl,--no-undefined
 
 CP		= cp -p
 RM		= rm -rf
@@ -21,9 +21,9 @@ LDFLAGS += -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,--as-needed -Wl,--strip-
 
 MNAME	= ffmpeg_cap
 HEADERS	= ffmpeg_cap.h
-SRCS	= ffmpeg.cpp ffmpeg_cap.cpp
+SRCS	= ffmpeg_cap_impl.cpp ffmpeg_cap.cpp
 INCS	= -I../build-mingw32/install/include
-LIBS	= -L../build-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -liconv
+LIBS	= -L../build-mingw32/install/lib -lavformat -lavcodec -lavutil -lswresample -lswscale -liconv -static-libstdc++ -static-libgcc
 CFLAGS 	+= -Dffmpeg_cap_EXPORTS
 CPPFLAGS+= -D__STDC_CONSTANT_MACROS
 LDFLAGS += -Wl,--output-def=$(DEFOUT)

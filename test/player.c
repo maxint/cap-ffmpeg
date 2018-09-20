@@ -20,23 +20,28 @@ LONG nTimer;
 VideoCapture_FFMPEG* cap = NULL;
 int nWidth = 0;
 int nHeight = 0;
+int nFmt = 0;
 unsigned char *data[4] = {0};
 int step[4] = {0};
 BITMAPINFO bmi;
 
 typedef VideoCapture_FFMPEG* (*ff_cap_create_t)(const char* fname);
-typedef void   (*ff_cap_release_t)(VideoCapture_FFMPEG** cap);
-typedef double (*ff_cap_get_t)(VideoCapture_FFMPEG* cap, int propid);
-typedef int    (*ff_cap_set_t)(VideoCapture_FFMPEG* cap, int propid, double val);
-typedef int    (*ff_cap_grab_t)(VideoCapture_FFMPEG* cap);
-typedef int    (*ff_cap_retrieve_t)(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
+typedef void    (*ff_cap_release_t)(VideoCapture_FFMPEG** cap);
+typedef double  (*ff_cap_get_t)(VideoCapture_FFMPEG* cap, int propid);
+typedef int     (*ff_cap_set_t)(VideoCapture_FFMPEG* cap, int propid, double val);
+typedef int     (*ff_cap_grab_t)(VideoCapture_FFMPEG* cap);
+typedef int     (*ff_cap_retrieve_t)(VideoCapture_FFMPEG* cap, const unsigned char* data[4], int step[4]);
+typedef int     (*ff_get_pix_fmt_t)(const char *name);
+typedef const char* (*ff_get_pix_fmt_name_t)(int pix_fmt);
 
-ff_cap_create_t    ff_cap_create_f = 0;
-ff_cap_release_t   ff_cap_release_f = 0;
-ff_cap_get_t       ff_cap_get_f = 0;
-ff_cap_set_t       ff_cap_set_f = 0;
-ff_cap_grab_t      ff_cap_grab_f = 0;
-ff_cap_retrieve_t  ff_cap_retrieve_f = 0;
+ff_cap_create_t     ff_cap_create_f = 0;
+ff_cap_release_t    ff_cap_release_f = 0;
+ff_cap_get_t        ff_cap_get_f = 0;
+ff_cap_set_t        ff_cap_set_f = 0;
+ff_cap_grab_t       ff_cap_grab_f = 0;
+ff_cap_retrieve_t   ff_cap_retrieve_f = 0;
+ff_get_pix_fmt_t    ff_get_pix_fmt_f = 0;
+ff_get_pix_fmt_name_t  ff_get_pix_fmt_name_f = 0;
 
 // Forward declarations of functions included in this code module:
 ATOM				RegisterWindowClass(HINSTANCE hInstance);
@@ -105,6 +110,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     ff_cap_set_f        = (ff_cap_set_t     ) GetProcAddress(hModule, TEXT("ff_cap_set"));
     ff_cap_grab_f       = (ff_cap_grab_t    ) GetProcAddress(hModule, TEXT("ff_cap_grab"));
     ff_cap_retrieve_f   = (ff_cap_retrieve_t) GetProcAddress(hModule, TEXT("ff_cap_retrieve"));
+    ff_get_pix_fmt_f    = (ff_get_pix_fmt_t ) GetProcAddress(hModule, TEXT("ff_get_pix_fmt"));
+    ff_get_pix_fmt_name_f = (ff_get_pix_fmt_name_t) GetProcAddress(hModule, TEXT("ff_get_pix_fmt_name"));
 
     if (ff_cap_create_f == 0 || ff_cap_release_f == 0 || ff_cap_get_f == 0 ||
         ff_cap_set_f == 0 || ff_cap_grab_f == 0 || ff_cap_retrieve_f == 0)
@@ -236,8 +243,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hWnd);
             break;
         }
-        nWidth  = (int)ff_cap_get_f(cap, FFMPEG_PROP_FRAME_WIDTH);
-        nHeight = (int)ff_cap_get_f(cap, FFMPEG_PROP_FRAME_HEIGHT);
+        nWidth  = (int) ff_cap_get_f(cap, FFMPEG_PROP_FRAME_WIDTH);
+        nHeight = (int) ff_cap_get_f(cap, FFMPEG_PROP_FRAME_HEIGHT);
+        nFmt = (int) ff_cap_get_f(cap, FFMPEG_PROP_PIXEL_FORMAT);
 		nTimer = SetTimer(hWnd, 1, 30, NULL);
 
         SetWindowPos(hWnd, 0, 0, 0, nWidth, nHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
